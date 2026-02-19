@@ -1,6 +1,8 @@
 from .sentiment_service import SentimentService
+from .tokenizer_utils import create_fallback_tokenizer
 
 _sentiment_service = None
+_tokenizer = None
 
 # Mock news data - in real app, this would come from an API
 MOCK_NEWS = [
@@ -34,23 +36,14 @@ Given the range of changes suggested by the SAVE America Act and other bills, Or
 		"title": "House passes SAVE Act to require voters to show ID",
 		"content": """
 The House of Representatives narrowly passed the SAVE America Act on Wednesday, but it faces a tough sell in the Senate.
-
 The House approved the measure on Wednesday by a vote of 218-213, with one Democrat voting in favor of the proposed law that would require voters to provide a birth certificate or passport to prove their citizenship status when registering to vote and produce a valid photo ID to vote.
-
 “It’s just common sense. Americans need an ID to drive, to open a bank account, to buy cold medicine [and] to file for government assistance,” House Speaker Mike Johnson, R-La., told media. “So, why would voting be any different than that?”
-
 Democrats oppose the measure, which Senate Minority Leader Chuck Schumer, D-N.Y., called “Jim Crow 2.0.”
-
 House Minority Leader Hakeem Jeffries, D-N.Y., called the proposed voting law a “desperate effort by Republicans to distract” without saying from what.
-
 “The so-called SAVE Act is not about voter identification,” Jeffries continued. “It is about voter suppression, and they have zero credibility on this issue.” Rep. Henry Cuellar, D-Texas, was the lone Democrat to vote in favor of the measure, which now goes to the Senate for consideration. Rep. Chip Roy, R-Texas, sponsored the bill.
-
 Although Senate Republicans have a simple majority in the upper chamber, they likely lack the 60 votes needed to overcome the Senate’s filibuster rule.
-
 Senate Majority Leader John Thune, R-S.D., on Tuesday said he supports the proposed act but does not have the votes needed to change the filibuster rule to pass it with a simple majority.
-
 The GOP controls 53 Senate seats, while Democrats control 47, including two held by independents who sit with the Senate Democratic Party’s caucus.
-
 Some Republicans have suggested requiring a standing filibuster, which would require those opposing proposed legislation to physically engage in a non-stop filibuster instead of just announcing their intent to do so.""",
 		"url": "https://www.breitbart.com/news/house-passes-save-act-to-require-voters-to-show-id/",
 		"source": "Breitbart News",
@@ -74,36 +67,90 @@ def _get_sentiment_service():
 	return _sentiment_service
 
 
+def _get_tokenizer():
+	global _tokenizer
+	if _tokenizer is None:
+		from transformers import AutoTokenizer
+
+		model_name = _get_sentiment_service().model_name
+		try:
+			_tokenizer = AutoTokenizer.from_pretrained(
+				model_name,
+				use_fast=True,
+				local_files_only=True,
+			)
+		except Exception:
+			_tokenizer = create_fallback_tokenizer()
+	return _tokenizer
+
+def _get_max_chunk_tokens(tokenizer, max_tokens):
+	model_max = getattr(tokenizer, "model_max_length", max_tokens)
+	if model_max is None or model_max > 100000:
+		model_max = max_tokens
+	special_tokens = 0
+	if hasattr(tokenizer, "num_special_tokens_to_add"):
+		special_tokens = tokenizer.num_special_tokens_to_add(pair=False)
+	available = max(1, model_max - special_tokens)
+	return min(max_tokens, available)
+
+
+def _split_long_sentence(sentence_text, tokenizer, max_chunk_tokens):
+	chunk_tokens = tokenizer.encode(sentence_text, add_special_tokens=False)
+	chunks = []
+	for i in range(0, len(chunk_tokens), max_chunk_tokens):
+		chunk_ids = chunk_tokens[i:i + max_chunk_tokens]
+		chunk_text = tokenizer.decode(chunk_ids, skip_special_tokens=True).strip()
+		if chunk_text and not chunk_text.endswith("."):
+			chunk_text += "."
+		if chunk_text:
+			chunks.append(chunk_text)
+	return chunks
+
+
 def _chunk_text(text, max_tokens=510):
 	"""
 	Chunk text into manageable pieces for analysis.
-	Each chunk is approximately max_tokens long, respecting sentence boundaries.
+	Uses a tokenizer for accurate token counts and keeps sentence boundaries.
 	"""
-	# Simple approach: split by sentences and group into chunks
+	if not text:
+		return []
+
+	tokenizer = _get_tokenizer()
+	max_chunk_tokens = _get_max_chunk_tokens(tokenizer, max_tokens)
+
+	# Split by sentences and group into chunks based on token counts.
 	sentences = [s.strip() for s in text.split('.') if s.strip()]
-	
 	chunks = []
-	current_chunk = ""
-	
+	current_sentences = []
+	current_token_count = 0
+
 	for sentence in sentences:
-		# Add a space if not empty
-		if current_chunk:
-			test_chunk = current_chunk + " " + sentence + "."
+		sentence_text = f"{sentence}."
+		sentence_token_count = len(
+			tokenizer.encode(sentence_text, add_special_tokens=False)
+		)
+
+		if sentence_token_count > max_chunk_tokens:
+			if current_sentences:
+				chunks.append(" ".join(current_sentences).strip())
+				current_sentences = []
+				current_token_count = 0
+			chunks.extend(
+				_split_long_sentence(sentence_text, tokenizer, max_chunk_tokens)
+			)
+			continue
+
+		if current_token_count + sentence_token_count <= max_chunk_tokens:
+			current_sentences.append(sentence_text)
+			current_token_count += sentence_token_count
 		else:
-			test_chunk = sentence + "."
-		
-		# For simplicity, we'll estimate token count based on character length
-		# In a real implementation, you'd use a tokenizer
-		if len(test_chunk) > max_tokens:
-			if current_chunk:
-				chunks.append(current_chunk)
-			current_chunk = sentence + "."
-		else:
-			current_chunk = test_chunk
-	
-	if current_chunk:
-		chunks.append(current_chunk)
-	
+			chunks.append(" ".join(current_sentences).strip())
+			current_sentences = [sentence_text]
+			current_token_count = sentence_token_count
+
+	if current_sentences:
+		chunks.append(" ".join(current_sentences).strip())
+
 	return chunks
 
 

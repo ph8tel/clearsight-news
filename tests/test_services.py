@@ -67,3 +67,5 @@ def test_get_article_insights_returns_expected_fields():
     assert insights["sentence_count"] == 2
     assert isinstance(insights["keywords"], list)
     assert isinstance(insights["reading_time_minutes"], int)
+    assert insights["reading_time_minutes"] > 0 # Test that the reading time is positive.
+

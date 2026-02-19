@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import Any, Dict, Optional
 import time
 
+from .tokenizer_utils import create_fallback_tokenizer
+
 
 class SentimentService:
     def __init__(
@@ -12,6 +14,7 @@ class SentimentService:
     ) -> None:
         self.model_name = model_name
         self._pipeline = pipeline
+        self._tokenizer = None
 
     def _get_pipeline(self) -> Any:
         if self._pipeline is None:
@@ -23,6 +26,26 @@ class SentimentService:
                 device=0,
             )
         return self._pipeline
+
+    def _get_tokenizer(self) -> Any:
+        if self._tokenizer is None:
+            from transformers import AutoTokenizer
+
+            try:
+                self._tokenizer = AutoTokenizer.from_pretrained(
+                    self.model_name,
+                    use_fast=True,
+                    local_files_only=True,
+                )
+            except Exception:
+                self._tokenizer = create_fallback_tokenizer()
+        return self._tokenizer
+
+    def _count_tokens(self, text: str) -> int:
+        if not text:
+            return 0
+        tokenizer = self._get_tokenizer()
+        return len(tokenizer.encode(text, add_special_tokens=False))
 
     def analyze(self, text: str) -> Dict[str, float | str | int | None | dict]:
         if not text:
@@ -70,6 +93,6 @@ class SentimentService:
             "label": label,
             "score": score,
             "raw": output,
-            "token_count": len(text.split()),
+            "token_count": self._count_tokens(text),
             "latency_ms": latency_ms,
         }
