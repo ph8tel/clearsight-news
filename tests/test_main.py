@@ -16,7 +16,7 @@ def test_index_route(client):
     """Test the main index route"""
     response = client.get('/')
     assert response.status_code == 200
-    assert b'News Insight App' in response.data
+    assert b'Both Eyes Open' in response.data
 
 def test_health_check_route(client):
     """Test the health check endpoint"""
