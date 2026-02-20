@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Both Eyes Open · Story Deep Dive</title>
@@ -14,20 +15,24 @@
             --border: rgba(255, 255, 255, 0.1);
             font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
         }
+
         * {
             box-sizing: border-box;
         }
+
         body {
             margin: 0;
             min-height: 100vh;
             background: linear-gradient(135deg, #03030a, #0f172a 40%, #151b3d 100%);
             color: #f5f5f5;
         }
+
         .page {
             max-width: 1200px;
             margin: 0 auto;
             padding: 40px 24px 60px;
         }
+
         .hero {
             background: var(--panel);
             border-radius: 24px;
@@ -35,15 +40,18 @@
             box-shadow: 0 30px 80px rgba(6, 6, 12, 0.8);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
+
         .hero h1 {
             margin: 6px 0 12px;
             font-size: clamp(2.2rem, 3vw, 3rem);
             line-height: 1.1;
         }
+
         .hero p {
             color: var(--muted);
             max-width: 640px;
         }
+
         .nav-link {
             display: inline-flex;
             align-items: center;
@@ -57,37 +65,63 @@
             font-weight: 500;
             transition: background 0.3s ease;
         }
+
         .nav-link:hover {
             background: rgba(255, 255, 255, 0.08);
         }
+
         .selector {
             margin-top: 24px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            max-width: 460px;
+            gap: 12px;
         }
-        .selector label {
+
+        .selector-label {
             text-transform: uppercase;
             letter-spacing: 0.12em;
             font-size: 0.78rem;
             color: var(--muted);
         }
-        select {
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border);
-            background: rgba(255, 255, 255, 0.05);
-            color: #ffffff;
-            font-size: 1rem;
-            appearance: none;
+
+        .article-toggle {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
         }
+
+        .toggle-btn {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+            color: #f5f5ff;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, border 0.2s ease;
+        }
+
+        .toggle-btn:hover {
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #050505;
+            border-color: transparent;
+            box-shadow: 0 10px 30px rgba(120, 213, 255, 0.25);
+        }
+
         .analysis-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 24px;
             margin-top: 32px;
         }
+
         .article-card,
         .insights-card,
         .analysis-card {
@@ -97,25 +131,30 @@
             border: 1px solid var(--border);
             box-shadow: 0 20px 50px rgba(3, 3, 8, 0.7);
         }
+
         .article-card-header {
             display: flex;
             justify-content: space-between;
             gap: 16px;
             align-items: flex-start;
         }
+
         .article-card-header h2 {
             margin: 0;
         }
+
         .source-label {
             color: var(--muted);
             margin: 0;
         }
+
         .sentiment-pill {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 6px;
         }
+
         .sentiment-label {
             padding: 6px 14px;
             border-radius: 999px;
@@ -123,19 +162,24 @@
             font-weight: 600;
             color: #fff;
         }
+
         .sentiment-label.positive {
             background: linear-gradient(135deg, #00b09b, #96c93d);
         }
+
         .sentiment-label.negative {
             background: linear-gradient(135deg, #ff416c, #ff4b2b);
         }
+
         .sentiment-label.neutral {
             background: linear-gradient(135deg, #f093fb, #f5576c);
         }
+
         .sentiment-score {
             font-size: 0.85rem;
             color: var(--muted);
         }
+
         .analysis-summary {
             margin-top: 18px;
             font-size: 1rem;
@@ -146,6 +190,7 @@
             border-radius: 14px;
             border-left: 4px solid var(--accent);
         }
+
         .article-content {
             margin-top: 16px;
             line-height: 1.6;
@@ -156,9 +201,11 @@
             overflow: auto;
             white-space: pre-wrap;
         }
+
         .article-actions {
             margin-top: 22px;
         }
+
         .read-full-link {
             display: inline-flex;
             align-items: center;
@@ -170,27 +217,32 @@
             font-weight: 600;
             text-decoration: none;
         }
+
         .insights-grid {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 14px;
             margin-top: 12px;
         }
+
         .insights-grid span {
             color: var(--muted);
             font-size: 0.85rem;
         }
+
         .insights-grid strong {
             display: block;
             margin-top: 4px;
             font-size: 1.25rem;
         }
+
         .keywords-wrap {
             margin-top: 14px;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
         }
+
         .keyword-chip {
             padding: 6px 14px;
             border-radius: 999px;
@@ -199,16 +251,19 @@
             font-size: 0.85rem;
             color: #f2f2ff;
         }
+
         .analysis-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             gap: 12px;
         }
+
         .analysis-meta {
             font-size: 0.9rem;
             color: var(--muted);
         }
+
         .analysis-copy {
             margin-top: 18px;
             line-height: 1.65;
@@ -217,11 +272,13 @@
             max-height: 320px;
             overflow: auto;
         }
+
         .comparison-reference {
             margin: 12px 0 0;
             color: var(--muted);
             font-size: 0.9rem;
         }
+
         .loading,
         .error {
             margin-top: 32px;
@@ -230,21 +287,26 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             text-align: center;
         }
+
         .loading {
             background: rgba(255, 255, 255, 0.04);
         }
+
         .error {
             background: rgba(255, 77, 127, 0.12);
             color: #ffb3c9;
             border-color: rgba(255, 77, 127, 0.4);
         }
+
         .footer {
             margin-top: 40px;
             text-align: center;
             color: var(--muted);
             font-size: 0.85rem;
         }
+
         @media (max-width: 768px) {
+
             .article-card,
             .insights-card,
             .analysis-card {
@@ -253,19 +315,20 @@
         }
     </style>
 </head>
+
 <body>
     <div class="page">
         <div class="hero">
             <a class="nav-link" href="/news-search">← Search news</a>
             <h1>Story Deep Dive</h1>
-            <p>Keep the existing comparison-inspired layout but switch to an expressive single-article lens powered by our Qwen rhetoric and Mistral comparison helpers.</p>
             <div class="selector">
-                <label for="article-selector">Focus article</label>
-                <select id="article-selector">
+                <span class="selector-label">Focus article</span>
+                <div class="article-toggle">
                     {% for option in article_options %}
-                        <option value="{{ option.id }}" {% if option.id == selected_article_id %}selected{% endif %}>{{ option.title }}</option>
+                    <button type="button" class="toggle-btn {% if option.id == selected_article_id %}active{% endif %}"
+                        data-article-id="{{ option.id }}">{{ option.title }}</button>
                     {% endfor %}
-                </select>
+                </div>
             </div>
         </div>
         <div id="analysis-error" class="error" style="display: none;"></div>
@@ -286,9 +349,31 @@
                 <div id="analysis-summary" class="analysis-summary">Summary loading…</div>
                 <div id="article-content" class="article-content"></div>
                 <div class="article-actions">
-                    <a id="read-full-link" class="read-full-link" href="#" target="_blank" rel="noreferrer noopener">Read the original story</a>
+                    <a id="read-full-link" class="read-full-link" href="#" target="_blank"
+                        rel="noreferrer noopener">Read the original story</a>
                 </div>
             </section>
+            <section class="analysis-card">
+                <div class="analysis-card-header">
+                    <h3>Comparative lens</h3>
+                    <span id="comparison-model" class="analysis-meta">Mistral-7B · Tokens: <strong
+                            id="comparison-tokens">0</strong></span>
+                </div>
+                <p class="comparison-reference">Comparing against <span id="comparison-reference">—</span></p>
+                <div id="comparison-text" class="analysis-copy">Comparison narrative will appear here.</div>
+            </section>
+
+        </div>
+        <div id="deep-analysis" class="analysis-grid deep-grid" hidden>
+            <section class="analysis-card">
+                <div class="analysis-card-header">
+                    <h3>Descriptive rhetoric</h3>
+                    <span id="rhetoric-model" class="analysis-meta">Qwen2-7B · Tokens: <strong
+                            id="rhetoric-tokens">0</strong></span>
+                </div>
+                <div id="rhetoric-text" class="analysis-copy">Rhetoric breakdown will appear here.</div>
+            </section>
+
             <section class="insights-card">
                 <h3>Article insights</h3>
                 <div class="insights-grid">
@@ -311,31 +396,15 @@
                 </div>
                 <div class="keywords-wrap" id="keywords-list"></div>
             </section>
+
         </div>
-        <div id="deep-analysis" class="analysis-grid deep-grid" hidden>
-            <section class="analysis-card">
-                <div class="analysis-card-header">
-                    <h3>Descriptive rhetoric</h3>
-                    <span id="rhetoric-model" class="analysis-meta">Qwen2-7B · Tokens: <strong id="rhetoric-tokens">0</strong></span>
-                </div>
-                <div id="rhetoric-text" class="analysis-copy">Rhetoric breakdown will appear here.</div>
-            </section>
-            <section class="analysis-card">
-                <div class="analysis-card-header">
-                    <h3>Comparative lens</h3>
-                    <span id="comparison-model" class="analysis-meta">Mistral-7B · Tokens: <strong id="comparison-tokens">0</strong></span>
-                </div>
-                <p class="comparison-reference">Comparing against <span id="comparison-reference">—</span></p>
-                <div id="comparison-text" class="analysis-copy">Comparison narrative will appear here.</div>
-            </section>
-        </div>
-        <div class="footer">Powered by the News Insight helpers · deep dives stay aligned with the digest.</div>
+        <div class="footer">Made by ph8l · deep dives stay aligned with the digest.</div>
     </div>
 
     <script>
-        const articleOptions = {{ article_options|tojson }};
+        const articleOptions = {{ article_options| tojson }};
         const selectedArticleId = {{ selected_article_id }};
-        const articleSelector = document.getElementById('article-selector');
+        const articleButtons = Array.from(document.querySelectorAll('.toggle-btn'));
         const loadingIndicator = document.getElementById('analysis-loading');
         const errorBox = document.getElementById('analysis-error');
         const analysisWrapper = document.getElementById('analysis-wrapper');
@@ -361,6 +430,7 @@
         const comparisonTokens = document.getElementById('comparison-tokens');
         const comparisonReference = document.getElementById('comparison-reference');
         const DEFAULT_ARTICLE_ID = selectedArticleId || (articleOptions[0] ? articleOptions[0].id : 0);
+        let activeArticleId = DEFAULT_ARTICLE_ID;
 
         function setLoading(isLoading) {
             loadingIndicator.style.display = isLoading ? 'block' : 'none';
@@ -377,6 +447,13 @@
             } else {
                 errorBox.style.display = 'none';
             }
+        }
+
+        function setActiveArticleButton(articleId) {
+            articleButtons.forEach((button) => {
+                const buttonId = Number(button.dataset.articleId);
+                button.classList.toggle('active', buttonId === articleId);
+            });
         }
 
         function formatDate(timeString) {
@@ -473,13 +550,20 @@
                 .finally(() => setLoading(false));
         }
 
-        articleSelector.addEventListener('change', (event) => {
-            const articleId = Number(event.target.value);
-            fetchAnalysis(articleId);
+        articleButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const articleId = Number(button.dataset.articleId);
+                if (articleId === activeArticleId) {
+                    return;
+                }
+                activeArticleId = articleId;
+                setActiveArticleButton(activeArticleId);
+                fetchAnalysis(activeArticleId);
+            });
         });
 
         if (DEFAULT_ARTICLE_ID) {
-            articleSelector.value = DEFAULT_ARTICLE_ID;
+            setActiveArticleButton(DEFAULT_ARTICLE_ID);
             fetchAnalysis(DEFAULT_ARTICLE_ID);
         } else {
             showError('No articles are configured yet.');
@@ -489,264 +573,5 @@
         }
     </script>
 </body>
-</html><!DOCTYPE html>
-<html>
-<head>
-    <title>Both Eyes Open</title>
-    <style>
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background-color: #121212;
-            color: #e0e0e0;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        }
-        .header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        .header-nav {
-            margin-top: 16px;
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        .header-nav a {
-            color: #cfd9ff;
-            text-decoration: none;
-            padding: 8px 14px;
-            border-radius: 999px;
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            transition: background 0.3s ease, transform 0.3s ease;
-            font-weight: 500;
-        }
-        .header-nav a:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-        .articles-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(650px, 1fr));
-            gap: 25px;
-            margin-top: 20px;
-        }
-        .article { 
-            background-color: #1e1e1e;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-        .article:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
-        }
-        .article-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #333;
-        }
-        .article-header h2 {
-            margin: 0 0 10px 0;
-            font-size: 1.5rem;
-            line-height: 1.3;
-        }
-        .source { 
-            font-size: 0.9rem; 
-            color: #aaa;
-            margin: 0;
-        }
-        .summary {
-            margin: 15px 0;
-            padding: 15px;
-            background-color: #252525;
-            border-radius: 8px;
-            border-left: 3px solid #4facfe;
-        }
-        .content-preview {
-            margin: 15px 0;
-            padding: 15px;
-            background-color: #252525;
-            border-radius: 8px;
-            border-left: 3px solid #00f2fe;
-        }
-        .sentiment-section {
-            margin: 15px 0;
-            padding: 15px;
-            background-color: #252525;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .sentiment-label { 
-            font-weight: bold; 
-            padding: 5px 12px;
-            border-radius: 20px;
-            color: white;
-            font-size: 0.9rem;
-        }
-        .positive { background: linear-gradient(135deg, #00b09b 0%, #96c93d 100%); }
-        .negative { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); }
-        .neutral { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .insights {
-            background-color: #252525;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 15px;
-            border-left: 3px solid #8a2be2;
-        }
-        .insights div {
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-        }
-        .keywords {
-            display: inline-block;
-            margin: 3px;
-            padding: 4px 10px;
-            background-color: #333;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: #ddd;
-        }
-        .read-more {
-            margin-top: 20px;
-            padding: 12px 20px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            text-decoration: none;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: bold;
-            transition: all 0.3s ease;
-            border: none;
-            cursor: pointer;
-        }
-        .read-more:hover {
-            transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(0, 242, 254, 0.4);
-        }
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #aaa;
-            font-size: 1.2rem;
-        }
-        .error {
-            color: #ff6b6b;
-            text-align: center;
-            padding: 40px;
-            font-size: 1.2rem;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: #777;
-            font-size: 0.9rem;
-        }
-        @media (max-width: 768px) {
-            .articles-container {
-                grid-template-columns: 1fr;
-            }
-            .header h1 {
-                font-size: 2rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Both Eyes Open</h1>
-            <div class="header-nav">
-                <a href="/news-search">Search the news</a>
-            </div>
-        </div>
-        <div id="app">
-            <div id="loading" class="loading">Loading news...</div>
-            <div id="error" class="error" style="display: none;"></div>
-            <div id="articles" class="articles-container"></div>
-        </div>
-    </div>
 
-    <script>
-        // Simple JavaScript to fetch and display news
-        document.addEventListener('DOMContentLoaded', function() {
-            fetch('/api/news')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('loading').style.display = 'none';
-                    const articlesContainer = document.getElementById('articles');
-                    
-                    if (data.length === 0) {
-                        articlesContainer.innerHTML = '<p>No articles found.</p>';
-                        return;
-                    }
-                    
-                    data.forEach(article => {
-                        const articleDiv = document.createElement('div');
-                        const sentimentLabel = (article.sentiment && article.sentiment.sentiment)
-                            ? article.sentiment.sentiment
-                            : 'Neutral';
-                        const sentimentClass = sentimentLabel.toLowerCase();
-                        articleDiv.className = 'article';
-                        articleDiv.innerHTML = `
-                            <div class="article-header">
-                                <h2>${article.title}</h2>
-                                <span class="source">${article.source}</span>
-                            </div>
-                            <div class="summary">
-                                <p>${article.summary}</p>
-                            </div>
-                            <div class="insights">
-                                <h4>Article Insights:</h4>
-                                <div><span>Word Count:</span> <span>${article.insights.word_count}</span></div>
-                                <div><span>Sentence Count:</span> <span>${article.insights.sentence_count}</span></div>
-                                <div><span>Reading Time:</span> <span>${article.insights.reading_time} minutes</span></div>
-                                <div><span>Keywords:</span> <span>${article.insights.keywords.join(', ')}</span></div>
-                            </div>
-                            <div class="sentiment-section">
-                                <span>Sentiment:</span>
-                                <span class="sentiment-label ${sentimentClass}">${sentimentLabel}</span>
-                                <span>(Polarity: ${article.sentiment?.polarity ?? 'N/A'})</span>
-                            </div>
-                            <a href="${article.url || '#'}" class="read-more">Read Full Article</a>
-                        `;
-                        articlesContainer.appendChild(articleDiv);
-                    });
-                })
-                .catch(error => {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('error').style.display = 'block';
-                    document.getElementById('error').textContent = 'Error loading news: ' + error.message;
-                });
-        });
-    </script>
-</body>
 </html>
