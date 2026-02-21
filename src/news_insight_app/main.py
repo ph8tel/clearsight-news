@@ -35,21 +35,16 @@ def _find_article(article_id):
 
 @main.route('/')
 def index():
-    """Main page route"""
-    article_options = [
-        {"id": article['id'], "title": article['title']} for article in MOCK_NEWS
-    ]
-    if article_options:
-        default_article_id = article_options[0]['id']
-    else:
-        default_article_id = 0
-    requested_id = request.args.get('article_id', type=int)
-    selected_article_id = requested_id or default_article_id
-    return render_template(
-        'index.html',
-        article_options=article_options,
-        selected_article_id=selected_article_id,
-    )
+    """Landing page — search and compare."""
+    return _news_search_view()
+
+
+@main.route('/news-search')
+def news_search_redirect():
+    """Legacy URL — redirect to /."""
+    from flask import redirect
+    qs = request.query_string.decode()
+    return redirect(f'/?{qs}' if qs else '/', code=301)
 
 
 def _process_api_article(article):
@@ -91,9 +86,8 @@ def _fetch_side(service, query, side, max_articles=5):
         return [], str(exc)
 
 
-@main.route('/news-search')
-def news_search():
-    """Render search form with left/right article columns for comparison selection."""
+def _news_search_view():
+    """Shared logic for the search + compare landing page."""
     query = request.args.get('q', '').strip()
     left_articles = []
     right_articles = []
