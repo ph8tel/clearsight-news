@@ -1,5 +1,4 @@
-from .sentiment_service import SentimentService
-from .tokenizer_utils import get_tokenizer_provider
+from .groq_service import GroqSentimentService
 
 _sentiment_service = None
 
@@ -62,103 +61,17 @@ def generate_summary(text, max_sentences=2):
 def _get_sentiment_service():
 	global _sentiment_service
 	if _sentiment_service is None:
-		_sentiment_service = SentimentService()
+		_sentiment_service = GroqSentimentService()
 	return _sentiment_service
 
 
-def _get_max_chunk_tokens(tokenizer, max_tokens):
-	model_max = getattr(tokenizer, "model_max_length", max_tokens)
-	if model_max is None or model_max > 100000:
-		model_max = max_tokens
-	special_tokens = 0
-	if hasattr(tokenizer, "num_special_tokens_to_add"):
-		special_tokens = tokenizer.num_special_tokens_to_add(pair=False)
-	available = max(1, model_max - special_tokens)
-	return min(max_tokens, available)
-
-
-def _split_long_sentence(sentence_text, tokenizer, max_chunk_tokens):
-	chunk_tokens = tokenizer.encode(sentence_text, add_special_tokens=False)
-	chunks = []
-	for i in range(0, len(chunk_tokens), max_chunk_tokens):
-		chunk_ids = chunk_tokens[i:i + max_chunk_tokens]
-		chunk_text = tokenizer.decode(chunk_ids, skip_special_tokens=True).strip()
-		if chunk_text and not chunk_text.endswith("."):
-			chunk_text += "."
-		if chunk_text:
-			chunks.append(chunk_text)
-	return chunks
-
-
-def _chunk_text(text, max_tokens=510):
-	"""
-	Chunk text into manageable pieces for analysis.
-	Uses a tokenizer for accurate token counts and keeps sentence boundaries.
-	"""
-	if not text:
-		return []
-
-	provider = get_tokenizer_provider()
-	model_name = _get_sentiment_service().model_name
-	tokenizer = provider.get_tokenizer(model_name)
-	max_chunk_tokens = _get_max_chunk_tokens(tokenizer, max_tokens)
-
-	# Split by sentences and group into chunks based on token counts.
-	sentences = [s.strip() for s in text.split('.') if s.strip()]
-	chunks = []
-	current_sentences = []
-	current_token_count = 0
-
-	for sentence in sentences:
-		sentence_text = f"{sentence}."
-		sentence_token_count = len(
-			tokenizer.encode(sentence_text, add_special_tokens=False)
-		)
-
-		if sentence_token_count > max_chunk_tokens:
-			if current_sentences:
-				chunks.append(" ".join(current_sentences).strip())
-				current_sentences = []
-				current_token_count = 0
-			chunks.extend(
-				_split_long_sentence(sentence_text, tokenizer, max_chunk_tokens)
-			)
-			continue
-
-		if current_token_count + sentence_token_count <= max_chunk_tokens:
-			current_sentences.append(sentence_text)
-			current_token_count += sentence_token_count
-		else:
-			chunks.append(" ".join(current_sentences).strip())
-			current_sentences = [sentence_text]
-			current_token_count = sentence_token_count
-
-	if current_sentences:
-		chunks.append(" ".join(current_sentences).strip())
-
-	return chunks
-
-
 def analyze_sentiment(text):
-	"""Sentiment analysis using the configured model service"""
-	service = _get_sentiment_service()
-	if not text:
-		return service.analyze("")
-	
-	# For very long texts, we'll analyze sentiment on chunks and combine results
-	# This avoids the sequence length limitation
-	chunks = _chunk_text(text, max_tokens=2000)
-	if not chunks:
-		return service.analyze("")
-	
-	if len(chunks) == 1:
-		# If only one chunk, analyze directly
-		return service.analyze(chunks[0])
-	else:
-		# For multiple chunks, analyze each and combine results
-		# Simple approach: analyze first chunk for overall sentiment
-		# In a production system, you'd want more sophisticated aggregation
-		return service.analyze(chunks[0])
+	"""Sentiment analysis via Groq.
+
+	llama-3.1-8b-instant has a 131K context window so the entire article is
+	sent in a single call — no chunking required.
+	"""
+	return _get_sentiment_service().analyze(text or "")
 
 
 def extract_keywords(text, num_keywords=5):

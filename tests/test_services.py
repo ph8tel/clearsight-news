@@ -1,7 +1,6 @@
 import pytest
 
 import news_insight_app.services as services
-from conftest import DummyTokenizerProvider
 
 
 class DummySentimentService:
@@ -31,15 +30,6 @@ def test_generate_summary_ellipsis():
     assert summary.endswith(". ..")
 
 
-def test_chunk_text_splits_long_text():
-    text = ". ".join(["Sentence"] * 30) + "."
-    # Use a deliberately small max_tokens value to stress-test chunking behavior on many small chunks.
-    # This is an edge-case unit test and is not intended to reflect typical production token limits.
-    chunks = services._chunk_text(text, max_tokens=10)
-    assert len(chunks) > 1
-    assert all(chunk.endswith(".") for chunk in chunks)
-
-
 def test_analyze_sentiment_uses_single_chunk(monkeypatch):
     dummy = DummySentimentService()
     monkeypatch.setattr(services, "_get_sentiment_service", lambda: dummy)
@@ -51,16 +41,24 @@ def test_analyze_sentiment_uses_single_chunk(monkeypatch):
     assert result["sentiment"] == "Neutral"
 
 
-def test_analyze_sentiment_uses_first_chunk_for_long_text(monkeypatch):
+def test_analyze_sentiment_passes_full_text(monkeypatch):
+    """With a 131K context window there is no chunking — full text goes straight to the model."""
     dummy = DummySentimentService()
     monkeypatch.setattr(services, "_get_sentiment_service", lambda: dummy)
 
-    text = ". ".join(["Sentence"] * 40) + "."
-    result = services.analyze_sentiment(text)
+    text = " ".join(["word"] * 500)  # 500-word article, no chunking
+    services.analyze_sentiment(text)
 
     assert len(dummy.calls) == 1
-    assert dummy.calls[0].endswith(".")
-    assert result["model"] == "dummy"
+    assert dummy.calls[0] == text
+
+
+def test_analyze_sentiment_empty_text(monkeypatch):
+    dummy = DummySentimentService()
+    monkeypatch.setattr(services, "_get_sentiment_service", lambda: dummy)
+
+    services.analyze_sentiment("")
+    assert dummy.calls == [""]
 
 
 def test_get_article_insights_returns_expected_fields():
@@ -71,21 +69,5 @@ def test_get_article_insights_returns_expected_fields():
     assert insights["sentence_count"] == 2
     assert isinstance(insights["keywords"], list)
     assert isinstance(insights["reading_time_minutes"], int)
-    assert insights["reading_time_minutes"] > 0 # Test that the reading time is positive.
-
-
-def test_chunk_text_uses_tokenizer_provider(monkeypatch):
-    """Verify that _chunk_text passes model_name to tokenizer provider."""
-    dummy_service = DummySentimentService()
-    monkeypatch.setattr(services, "_get_sentiment_service", lambda: dummy_service)
-
-    provider = DummyTokenizerProvider()
-    monkeypatch.setattr(services, "get_tokenizer_provider", lambda: provider)
-
-    text = "Short sentence. Another sentence."
-    services._chunk_text(text)
-
-    # Verify get_tokenizer was called with the correct model_name
-    assert len(provider.get_tokenizer_calls) == 1
-    assert provider.get_tokenizer_calls[0] == "dummy"
+    assert insights["reading_time_minutes"] > 0
 

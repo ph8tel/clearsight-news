@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request
 from datetime import datetime
 
-from .analysis_service import analyze_rhetoric, compare_article_texts
+from .groq_service import analyze_rhetoric, compare_article_texts
 from .services import (
 	MOCK_NEWS,
 	generate_summary,
@@ -148,9 +148,10 @@ def get_article_analysis(article_id):
             "title": reference_article['title'],
         }
     else:
+        from .groq_service import GROQ_COMPARISON_MODEL
         comparison = {
             "comparison": "Comparison unavailable; only one article configured.",
-            "model": "Mistral-7B",
+            "model": GROQ_COMPARISON_MODEL,
             "tokens_used": 0,
             "error": "No reference article available.",
             "reference": None,
