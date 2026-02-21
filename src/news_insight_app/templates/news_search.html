@@ -559,9 +559,11 @@
     </div>
 
     <script>
-        // Show loading overlay when search is submitted
-        document.querySelector('form.search-panel').addEventListener('submit', function() {
-            document.getElementById('loading-overlay').classList.add('active');
+        // Show loading overlay when any search form is submitted
+        document.querySelectorAll('form.search-panel, .search-bar-compact form').forEach(function(form) {
+            form.addEventListener('submit', function() {
+                document.getElementById('loading-overlay').classList.add('active');
+            });
         });
 
         let selections = { left: null, right: null };
