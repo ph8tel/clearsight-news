@@ -413,13 +413,14 @@
                 <input name="q" type="text" placeholder="New search…" value="{{ query }}" required autocomplete="off">
                 <button type="submit">Search</button>
             </form>
+            <a style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.12);text-decoration:none;color:var(--muted);font-size:0.78rem;white-space:nowrap;transition:background 0.2s;" href="/sentiment-search{% if query %}?q={{ query }}{% endif %}">⇄ Sentiment view</a>
         </div>
         {% else %}
         <!-- Full hero: landing / empty state -->
         <div class="hero">
             <h1>ClearSight News</h1>
             <p class="tagline">See the same story through different political lenses — then let AI show you what each side is really saying.</p>
-            <div class="flow-steps">
+            <a class="nav-link" style="margin-bottom:18px;font-size:0.82rem;" href="/sentiment-search{% if query %}?q={{ query }}{% endif %}">⇄ Switch to Sentiment view</a>
                 <div class="flow-step">
                     <span class="step-num">1</span>
                     <div>

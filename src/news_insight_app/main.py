@@ -110,6 +110,32 @@ def _news_search_view():
         error=error,
     )
 
+@main.route('/sentiment-search')
+def sentiment_search():
+    """Search across all sources; rank results by sentiment score."""
+    query = request.args.get('q', '').strip()
+    articles = []
+    error = None
+
+    if query:
+        try:
+            service = NewsApiService()
+            raw = service.search_news(query, max_articles=10)
+            articles = [_process_api_article(a) for a in raw]
+            # Sort: Positive first, then Neutral, then Negative
+            _order = {'Positive': 0, 'Neutral': 1, 'Negative': 2}
+            articles.sort(key=lambda a: _order.get(a['sentiment'].get('sentiment', 'Neutral'), 1))
+        except Exception as exc:
+            error = str(exc)
+
+    return render_template(
+        'sentiment_search.html',
+        query=query,
+        articles=articles,
+        error=error,
+    )
+
+
 @main.route('/api/news')
 def get_news():
     """API endpoint to get all news articles"""
