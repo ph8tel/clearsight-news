@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Search &amp; Compare · Both Eyes Open</title>
+    <title>ClearSight News · See both sides</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         :root {
@@ -31,8 +31,31 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             margin-bottom: 30px;
         }
-        .hero h1 { margin: 8px 0 10px; font-size: clamp(2rem, 3vw, 2.8rem); letter-spacing: -0.02em; }
-        .hero p { color: var(--muted); margin: 0 0 20px; max-width: 640px; }
+        .hero h1 { margin: 0 0 8px; font-size: clamp(2rem, 3vw, 2.8rem); letter-spacing: -0.02em; }
+        .hero p.tagline { color: var(--muted); margin: 0 0 24px; max-width: 600px; font-size: 1.05rem; line-height: 1.6; }
+        .flow-steps { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .step-num {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #05050a;
+            font-weight: 800;
+            font-size: 0.82rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1px;
+        }
+        .flow-step div { display: flex; flex-direction: column; gap: 1px; }
+        .flow-step strong { color: #f0f2ff; font-size: 0.9rem; }
+        .flow-step span { color: var(--muted); font-size: 0.82rem; line-height: 1.4; }
         .nav-link {
             display: inline-flex;
             align-items: center;
@@ -334,10 +357,32 @@
 <body>
     <div class="page">
         <div class="hero">
-            <a class="nav-link" href="/">← Deep dive</a>
-            <h1>Search &amp; Compare</h1>
-            <p>Search a topic to surface left and right coverage. Pick one article from each column, then compare.</p>
-            <form class="search-panel" method="get" action="/news-search">
+            <h1>ClearSight News</h1>
+            <p class="tagline">See the same story through different political lenses — then let AI show you what each side is really saying.</p>
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <span class="step-num">1</span>
+                    <div>
+                        <strong>Search a topic</strong>
+                        <span>We pull live coverage from left- and right-leaning sources side by side.</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <span class="step-num">2</span>
+                    <div>
+                        <strong>Pick one article per column</strong>
+                        <span>Each card shows a sentiment score and key phrases so you can choose wisely.</span>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <span class="step-num">3</span>
+                    <div>
+                        <strong>Compare</strong>
+                        <span>Groq Llama analyses the rhetoric in both pieces and surfaces exactly what differs.</span>
+                    </div>
+                </div>
+            </div>
+            <form class="search-panel" method="get" action="/">
                 <input name="q" type="text" placeholder="e.g. immigration policy" value="{{ query }}" required autocomplete="off">
                 <button type="submit">Search</button>
             </form>
