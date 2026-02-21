@@ -15,6 +15,7 @@ from news_insight_app.groq_service import (
     GROQ_SENTIMENT_MODEL,
     GROQ_RHETORIC_MODEL,
     GROQ_COMPARISON_MODEL,
+    _compute_sentiment_score,
 )
 
 
@@ -168,40 +169,63 @@ def test_groq_sentiment_empty_text_short_circuits(monkeypatch):
     }
 
 
+# Rich JSON responses matching the formula schema
+_POSITIVE_JSON = (
+    '{"tone": "positive",'
+    ' "emotions": {"joy": 0.8, "trust": 0.7, "fear": 0.1, "anger": 0.0,'
+    '              "sadness": 0.0, "anticipation": 0.6, "disgust": 0.0, "surprise": 0.2},'
+    ' "rhetoric": {"analytical": 0.7, "supportive": 0.8, "persuasive": 0.4,'
+    '              "alarmist": 0.0, "dismissive": 0.0, "sarcastic": 0.0},'
+    ' "loaded_language": 0.1,'
+    ' "certainty": {"certainty": 0.8, "speculation": 0.1}}'
+)
+_NEGATIVE_JSON = (
+    '{"tone": "negative",'
+    ' "emotions": {"joy": 0.0, "trust": 0.0, "fear": 0.7, "anger": 0.8,'
+    '              "sadness": 0.6, "anticipation": 0.0, "disgust": 0.5, "surprise": 0.1},'
+    ' "rhetoric": {"analytical": 0.1, "supportive": 0.0, "persuasive": 0.3,'
+    '              "alarmist": 0.8, "dismissive": 0.6, "sarcastic": 0.4},'
+    ' "loaded_language": 0.8,'
+    ' "certainty": {"certainty": 0.2, "speculation": 0.1}}'
+)
+_NEUTRAL_JSON = (
+    '{"tone": "neutral",'
+    ' "emotions": {"joy": 0.2, "trust": 0.2, "fear": 0.1, "anger": 0.1,'
+    '              "sadness": 0.1, "anticipation": 0.2, "disgust": 0.1, "surprise": 0.1},'
+    ' "rhetoric": {"analytical": 0.5, "supportive": 0.3, "persuasive": 0.3,'
+    '              "alarmist": 0.1, "dismissive": 0.1, "sarcastic": 0.1},'
+    ' "loaded_language": 0.2,'
+    ' "certainty": {"certainty": 0.5, "speculation": 0.4}}'
+)
+
+
 def test_groq_sentiment_positive(monkeypatch):
-    _patch_chat(
-        monkeypatch,
-        '{"sentiment": "positive", "tone": "calm", "evidence": ["great result"]}',
-    )
+    _patch_chat(monkeypatch, _POSITIVE_JSON)
     service = GroqSentimentService()
     result = service.analyze("This is great news.")
     assert result["sentiment"] == "Positive"
-    assert result["polarity"] == pytest.approx(1.0)
+    assert result["polarity"] > 0.1
     assert result["label"] == "POSITIVE"
-    assert result["score"] == pytest.approx(1.0)
+    assert result["score"] == pytest.approx(result["confidence"])
     assert result["model"] == GROQ_SENTIMENT_MODEL
 
 
 def test_groq_sentiment_negative(monkeypatch):
-    _patch_chat(
-        monkeypatch,
-        '{"sentiment": "negative", "tone": "emotional", "evidence": ["terrible"]}',
-    )
+    _patch_chat(monkeypatch, _NEGATIVE_JSON)
     service = GroqSentimentService()
     result = service.analyze("This is terrible news.")
     assert result["sentiment"] == "Negative"
-    assert result["polarity"] == pytest.approx(-1.0)
+    assert result["polarity"] < -0.1
     assert result["label"] == "NEGATIVE"
 
 
 def test_groq_sentiment_neutral(monkeypatch):
-    _patch_chat(monkeypatch, '{"sentiment": "neutral", "tone": "calm", "evidence": []}')
+    _patch_chat(monkeypatch, _NEUTRAL_JSON)
     service = GroqSentimentService()
     result = service.analyze("Things happened today.")
     assert result["sentiment"] == "Neutral"
-    assert result["polarity"] == pytest.approx(0.0)
+    assert abs(result["polarity"]) <= 0.1
     assert result["label"] == "NEUTRAL"
-    assert result["score"] == pytest.approx(0.0)
 
 
 def test_groq_sentiment_fallback_keyword_detection(monkeypatch):
@@ -213,7 +237,7 @@ def test_groq_sentiment_fallback_keyword_detection(monkeypatch):
 
 
 def test_groq_sentiment_custom_model(monkeypatch):
-    _patch_chat(monkeypatch, '{"sentiment": "positive", "tone": "calm", "evidence": []}')
+    _patch_chat(monkeypatch, _POSITIVE_JSON)
     service = GroqSentimentService(model_name="my-custom-model")
     result = service.analyze("Good news.")
     assert result["model"] == "my-custom-model"
@@ -228,6 +252,52 @@ def test_groq_sentiment_exception_returns_neutral(monkeypatch):
     # Should degrade gracefully; raw_text will be "" → neutral fallback
     assert result["sentiment"] == "Neutral"
     assert isinstance(result["latency_ms"], int)
+
+
+# ---------------------------------------------------------------------------
+# _compute_sentiment_score  (formula unit tests)
+# ---------------------------------------------------------------------------
+
+def test_compute_sentiment_score_positive():
+    import json
+    parsed = json.loads(_POSITIVE_JSON)
+    score = _compute_sentiment_score(parsed)
+    assert score > 0.1
+
+
+def test_compute_sentiment_score_negative():
+    import json
+    parsed = json.loads(_NEGATIVE_JSON)
+    score = _compute_sentiment_score(parsed)
+    assert score < -0.1
+
+
+def test_compute_sentiment_score_neutral():
+    import json
+    parsed = json.loads(_NEUTRAL_JSON)
+    score = _compute_sentiment_score(parsed)
+    assert abs(score) <= 0.1
+
+
+def test_compute_sentiment_score_empty_dict():
+    """All zeros → score of 0.0 (pure neutral baseline)."""
+    score = _compute_sentiment_score({})
+    assert score == pytest.approx(0.0)
+
+
+def test_compute_sentiment_score_clamped():
+    """Score is always clamped to [-1, 1] even with extreme inputs."""
+    extreme_positive = {
+        "tone": "positive",
+        "emotions": {"joy": 1.0, "trust": 1.0, "fear": 0.0, "anger": 0.0,
+                     "sadness": 0.0, "anticipation": 1.0, "disgust": 0.0, "surprise": 1.0},
+        "rhetoric": {"analytical": 1.0, "supportive": 1.0, "persuasive": 1.0,
+                     "alarmist": 0.0, "dismissive": 0.0, "sarcastic": 0.0},
+        "loaded_language": 0.0,
+        "certainty": {"certainty": 1.0, "speculation": 0.0},
+    }
+    score = _compute_sentiment_score(extreme_positive)
+    assert -1.0 <= score <= 1.0
 
 
 # ---------------------------------------------------------------------------

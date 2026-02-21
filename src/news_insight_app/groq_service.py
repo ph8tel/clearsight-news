@@ -107,6 +107,74 @@ def _strip_think(text: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Sentiment score formula
+# ---------------------------------------------------------------------------
+
+def _compute_sentiment_score(parsed: Dict[str, Any]) -> float:
+    """Compute a weighted sentiment score in [-1, 1] from the rich JSON schema.
+
+    Formula (weights sum to 1.0)::
+
+        score = 0.25 * tone
+              + 0.25 * emotion_polarity
+              + 0.15 * emotion_intensity
+              + 0.15 * rhetoric_polarity
+              + 0.10 * loaded_language   # always negative
+              + 0.10 * certainty
+    """
+    # --- Tone polarity -------------------------------------------------------
+    tone_str = str(parsed.get("tone", "neutral")).lower()
+    tone = 1.0 if tone_str == "positive" else (-1.0 if tone_str == "negative" else 0.0)
+
+    # --- Emotion dimensions --------------------------------------------------
+    em = parsed.get("emotions", {}) or {}
+    joy          = float(em.get("joy",          0.0))
+    trust        = float(em.get("trust",        0.0))
+    fear         = float(em.get("fear",         0.0))
+    anger        = float(em.get("anger",        0.0))
+    sadness      = float(em.get("sadness",      0.0))
+    disgust      = float(em.get("disgust",      0.0))
+    anticipation = float(em.get("anticipation", 0.0))
+    surprise     = float(em.get("surprise",     0.0))
+
+    # polarity: positive emotions minus negative emotions, normalised to [-1, 1]
+    emotion_polarity = ((joy + trust) - (anger + fear + sadness + disgust)) / 6.0
+    # intensity: how emotional the article is regardless of direction, in [0, 1]
+    emotion_intensity = (joy + trust + fear + anger + sadness + disgust + anticipation + surprise) / 8.0
+
+    # --- Rhetoric polarity ---------------------------------------------------
+    rh = parsed.get("rhetoric", {}) or {}
+    analytical = float(rh.get("analytical", 0.0))
+    supportive = float(rh.get("supportive",  0.0))
+    alarmist   = float(rh.get("alarmist",   0.0))
+    dismissive = float(rh.get("dismissive",  0.0))
+    sarcastic  = float(rh.get("sarcastic",   0.0))
+
+    rhetoric_polarity = ((supportive + analytical) - (alarmist + dismissive + sarcastic)) / 5.0
+
+    # --- Loaded language (0-1 → always pushes negative) ---------------------
+    loaded_language = float(parsed.get("loaded_language", 0.0)) * -1.0
+
+    # --- Certainty vs speculation --------------------------------------------
+    cert_obj = parsed.get("certainty", {}) or {}
+    if isinstance(cert_obj, dict):
+        certainty = float(cert_obj.get("certainty", 0.0)) - float(cert_obj.get("speculation", 0.0))
+    else:
+        certainty = 0.0
+
+    # --- Weighted sum --------------------------------------------------------
+    score = (
+        0.25 * tone
+        + 0.25 * emotion_polarity
+        + 0.15 * emotion_intensity
+        + 0.15 * rhetoric_polarity
+        + 0.10 * loaded_language
+        + 0.10 * certainty
+    )
+    return max(-1.0, min(1.0, score))
+
+
+# ---------------------------------------------------------------------------
 # Public analysis functions  (same interface as analysis_service.py)
 # ---------------------------------------------------------------------------
 
@@ -251,63 +319,66 @@ class GroqSentimentService:
             }
 
         prompt = (
-            "You are a sentiment and tone classifier. Return JSON only with no other text.\n"
+            "You are a news article analyst. Return ONLY a valid JSON object, no other text.\n\n"
             "Article:\n"
-            f"{text}\n\n"
-            "Classify:\n"
-            "- sentiment: positive, negative, or neutral\n"
-            "- tone: calm | emotional | inflammatory | persuasive | neutral | sarcastic | urgent\n"
-            "- evidence: list of phrases that influenced your classification\n"
+            f"{_truncate_text(text)}\n\n"
+            "Return this exact JSON structure. All numeric values must be between 0.0 and 1.0.\n"
+            '{\n'
+            '  "tone": "positive | neutral | negative",\n'
+            '  "emotions": {"joy": 0.0, "trust": 0.0, "fear": 0.0, "anger": 0.0,\n'
+            '               "sadness": 0.0, "anticipation": 0.0, "disgust": 0.0, "surprise": 0.0},\n'
+            '  "rhetoric": {"analytical": 0.0, "supportive": 0.0, "persuasive": 0.0,\n'
+            '               "alarmist": 0.0, "dismissive": 0.0, "sarcastic": 0.0},\n'
+            '  "loaded_language": 0.0,\n'
+            '  "certainty": {"certainty": 0.0, "speculation": 0.0}\n'
+            '}'
         )
 
         start_time = time.perf_counter()
         raw_text = ""
         try:
-            raw_text, _ = _chat_completion(self.model_name, prompt, max_tokens=200)
+            raw_text, _ = _chat_completion(self.model_name, prompt, max_tokens=300)
         except Exception:
             pass
         latency_ms = int((time.perf_counter() - start_time) * 1000)
 
-        # Parse JSON response -------------------------------------------------
+        # Parse JSON response and compute score -------------------------------
         raw_parsed: Any = raw_text
         parsed = _extract_first_json(raw_text)
+
         if parsed is not None:
             raw_parsed = parsed
-            sentiment_raw = str(parsed.get("sentiment", "neutral")).lower()
+            polarity = _compute_sentiment_score(parsed)
         else:
+            # Fallback: crude keyword scan when the model doesn't return JSON
             lower = raw_text.lower()
             if "negative" in lower:
-                sentiment_raw = "negative"
+                polarity = -0.5
             elif "positive" in lower:
-                sentiment_raw = "positive"
+                polarity = 0.5
             else:
-                sentiment_raw = "neutral"
+                polarity = 0.0
 
-        tone: str = ""
-        evidence: List[Any] = []
-        if isinstance(parsed, dict):
-            tone = str(parsed.get("tone", ""))
-            evidence = parsed.get("evidence", [])
-            if not isinstance(evidence, list):
-                evidence = []
-
-        if sentiment_raw == "negative":
-            label, sentiment, polarity = "NEGATIVE", "Negative", -1.0
-        elif sentiment_raw == "positive":
-            label, sentiment, polarity = "POSITIVE", "Positive", 1.0
+        # Classify using threshold
+        _THRESHOLD = 0.1
+        if polarity > _THRESHOLD:
+            label, sentiment = "POSITIVE", "Positive"
+        elif polarity < -_THRESHOLD:
+            label, sentiment = "NEGATIVE", "Negative"
         else:
-            label, sentiment, polarity = "NEUTRAL", "Neutral", 0.0
+            label, sentiment = "NEUTRAL", "Neutral"
 
-        score = 1.0 if sentiment_raw != "neutral" else 0.0
+        polarity = round(polarity, 4)
+        confidence = round(abs(polarity), 4)
 
         return {
             "sentiment": sentiment,
             "polarity": polarity,
             "subjectivity": 1.0,
             "model": self.model_name,
-            "confidence": score,
+            "confidence": confidence,
             "label": label,
-            "score": score,
+            "score": confidence,
             "raw": raw_parsed,
             "token_count": 0,  # Groq counts tokens server-side; not re-counted locally
             "latency_ms": latency_ms,
