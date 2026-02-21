@@ -147,7 +147,7 @@ def analyze_sentiment(text):
 	
 	# For very long texts, we'll analyze sentiment on chunks and combine results
 	# This avoids the sequence length limitation
-	chunks = _chunk_text(text, max_tokens=510)
+	chunks = _chunk_text(text, max_tokens=2000)
 	if not chunks:
 		return service.analyze("")
 	

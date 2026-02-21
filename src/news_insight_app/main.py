@@ -52,56 +52,68 @@ def index():
     )
 
 
+def _process_api_article(article):
+    """Normalise a raw NewsAPI article dict into a template-ready dict."""
+    content_text = (
+        article.get('content')
+        or article.get('description')
+        or article.get('title')
+        or ''
+    )
+    sentiment = analyze_sentiment(content_text)
+    # Promote Phi-specific fields before stripping raw
+    raw = sentiment.get('raw') or {}
+    tone = raw.get('tone', '') if isinstance(raw, dict) else ''
+    evidence = raw.get('evidence', []) if isinstance(raw, dict) else []
+    # Strip the raw field so the dict stays JSON-serialisable
+    sentiment = {k: v for k, v in sentiment.items() if k != 'raw'}
+    sentiment['tone'] = tone
+    sentiment['evidence'] = evidence if isinstance(evidence, list) else []
+    return {
+        'title': article.get('title', 'Untitled'),
+        'url': article.get('url', '#'),
+        'source': article.get('source', 'Unknown'),
+        'published_at': article.get('published_at', '') or article.get('publishedAt', ''),
+        'summary': generate_summary(content_text),
+        'sentiment': sentiment,
+        'insights': get_article_insights(content_text),
+        'content': content_text,
+        'description': article.get('description', ''),
+    }
+
+
+def _fetch_side(service, query, side, max_articles=5):
+    """Fetch and process articles for one political-lean bucket."""
+    try:
+        raw = service.search_news(query, max_articles=max_articles, source_category=side)
+        return [_process_api_article(a) for a in raw], None
+    except Exception as exc:
+        return [], str(exc)
+
+
 @main.route('/news-search')
 def news_search():
-    """Render search form and NewsAPI results."""
+    """Render search form with left/right article columns for comparison selection."""
     query = request.args.get('q', '').strip()
-    category = request.args.get('category', '').strip()
-    articles = []
+    left_articles = []
+    right_articles = []
     error = None
 
     if query:
         try:
             service = NewsApiService()
-            raw_results = service.search_news(query, max_articles=10, source_category=category or None)
-            for article in raw_results:
-                content_text = (
-                    article.get('content')
-                    or article.get('description')
-                    or article.get('title')
-                    or ''
-                )
-                summary = generate_summary(content_text)
-                sentiment = analyze_sentiment(content_text)
-                insights = get_article_insights(content_text)
-                articles.append({
-                    'title': article.get('title', 'Untitled'),
-                    'url': article.get('url', '#'),
-                    'source': article.get('source', 'Unknown'),
-                    'published_at': article.get('published_at', '') or article.get('publishedAt', ''),
-                    'summary': summary,
-                    'sentiment': sentiment,
-                    'insights': insights,
-                    'content': content_text,
-                    'description': article.get('description', ''),
-                })
+            left_articles, left_err = _fetch_side(service, query, 'left')
+            right_articles, right_err = _fetch_side(service, query, 'right')
+            error = left_err or right_err
         except Exception as exc:
             error = str(exc)
-
-    categories = [
-        {'label': 'Neutral', 'value': 'neutral'},
-        {'label': 'Left', 'value': 'left'},
-        {'label': 'Right', 'value': 'right'},
-    ]
 
     return render_template(
         'news_search.html',
         query=query,
-        category=category,
-        articles=articles,
+        left_articles=left_articles,
+        right_articles=right_articles,
         error=error,
-        categories=categories,
-        results_count=len(articles),
     )
 
 @main.route('/api/news')
@@ -151,6 +163,40 @@ def get_article_analysis(article_id):
         "rhetoric": rhetoric,
         "comparison": comparison,
     })
+
+@main.route('/compare')
+def compare():
+    """Comparison view shell — article data loaded client-side from sessionStorage."""
+    return render_template('compare.html')
+
+
+@main.route('/api/compare', methods=['POST'])
+def compare_articles_api():
+    """Run rhetoric + comparison analysis on two externally supplied articles."""
+    data = request.get_json(force=True) or {}
+    primary = data.get('primary', {})
+    reference = data.get('reference', {})
+
+    primary_content = primary.get('content', '')
+    reference_content = reference.get('content', '')
+
+    if not primary_content or not reference_content:
+        return jsonify({'error': 'Both articles must have content.'}), 400
+
+    primary_rhetoric = analyze_rhetoric(primary_content)
+    reference_rhetoric = analyze_rhetoric(reference_content)
+    comparison = compare_article_texts(primary_content, reference_content)
+    comparison['reference'] = {
+        'title': reference.get('title', ''),
+        'source': reference.get('source', ''),
+    }
+
+    return jsonify({
+        'primary': {'meta': primary, 'rhetoric': primary_rhetoric},
+        'reference': {'meta': reference, 'rhetoric': reference_rhetoric},
+        'comparison': comparison,
+    })
+
 
 @main.route('/api/health')
 def health_check():

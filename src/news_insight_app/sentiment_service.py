@@ -1,32 +1,29 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+import json
+import os
+import re
 import time
+from typing import Any, Dict
+
+import requests
 
 from .tokenizer_utils import get_tokenizer_provider
+
+PHI_URL = os.getenv("PHI_ANALYSIS_URL", "http://192.168.1.108:8002/v1/completions")
+PHI_MODEL_NAME = "phi3.5:latest"
 
 
 class SentimentService:
     def __init__(
         self,
-        model_name: str = "distilbert-base-uncased-finetuned-sst-2-english",
-        pipeline: Optional[Any] = None,
+        model_name: str = PHI_MODEL_NAME,
+        phi_url: str = PHI_URL,
     ) -> None:
         self.model_name = model_name
-        self._pipeline = pipeline
+        self._phi_url = phi_url
 
-    def _get_pipeline(self) -> Any:
-        if self._pipeline is None:
-            from transformers import pipeline
-
-            self._pipeline = pipeline(
-                "sentiment-analysis",
-                model=self.model_name,
-                device=0,
-            )
-        return self._pipeline
-
-    def analyze(self, text: str) -> Dict[str, float | str | int | None | dict]:
+    def analyze(self, text: str) -> Dict[str, Any]:
         if not text:
             return {
                 "sentiment": "Neutral",
@@ -41,27 +38,55 @@ class SentimentService:
                 "latency_ms": 0,
             }
 
-        pipeline = self._get_pipeline()
+        prompt = (
+            "You are a sentiment and tone classifier. Return JSON only with no other text.\n"
+            "Article:\n"
+            f"{text}\n\n"
+            "Classify:\n"
+            "- sentiment: positive, negative, or neutral\n"
+            "- tone: calm | emotional | inflammatory | persuasive | neutral | sarcastic | urgent\n"
+            "- evidence: list of phrases that influenced your classification\n"
+        )
+
         start_time = time.perf_counter()
-        outputs = pipeline(text)
+        body: Dict[str, Any] = {}
+        try:
+            response = requests.post(
+                self._phi_url,
+                json={"prompt": prompt, "max_tokens": 200, "temperature": 0.3},
+                timeout=60,
+            )
+            response.raise_for_status()
+            body = response.json()
+        except Exception:
+            pass
         latency_ms = int((time.perf_counter() - start_time) * 1000)
-        if isinstance(outputs, list) and outputs:
-            output = outputs[0]
-        else:
-            output = outputs
 
-        label = str(output.get("label", "NEUTRAL")).upper()
-        score = float(output.get("score", 0.0))
+        choices = body.get("choices") or []
+        raw_text = choices[0].get("text", "").strip() if choices else ""
 
-        if label == "NEGATIVE":
-            sentiment = "Negative"
-            polarity = -score
-        elif label == "POSITIVE":
-            sentiment = "Positive"
-            polarity = score
+        sentiment_raw = "neutral"
+        raw_parsed: Any = raw_text
+        try:
+            json_match = re.search(r"\{.*\}", raw_text, re.DOTALL)
+            if json_match:
+                raw_parsed = json.loads(json_match.group())
+                sentiment_raw = str(raw_parsed.get("sentiment", "neutral")).lower()
+        except (json.JSONDecodeError, AttributeError):
+            lower = raw_text.lower()
+            if "negative" in lower:
+                sentiment_raw = "negative"
+            elif "positive" in lower:
+                sentiment_raw = "positive"
+
+        if sentiment_raw == "negative":
+            label, sentiment, polarity = "NEGATIVE", "Negative", -1.0
+        elif sentiment_raw == "positive":
+            label, sentiment, polarity = "POSITIVE", "Positive", 1.0
         else:
-            sentiment = "Neutral"
-            polarity = 0.0
+            label, sentiment, polarity = "NEUTRAL", "Neutral", 0.0
+
+        score = 1.0 if sentiment_raw != "neutral" else 0.0
 
         provider = get_tokenizer_provider()
         token_count = provider.count_tokens(text, self.model_name)
@@ -74,7 +99,7 @@ class SentimentService:
             "confidence": score,
             "label": label,
             "score": score,
-            "raw": output,
+            "raw": raw_parsed,
             "token_count": token_count,
             "latency_ms": latency_ms,
         }

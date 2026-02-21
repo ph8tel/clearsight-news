@@ -33,7 +33,7 @@ def test_generate_summary_ellipsis():
 
 def test_chunk_text_splits_long_text():
     text = ". ".join(["Sentence"] * 30) + "."
-    chunks = services._chunk_text(text, max_tokens=50)
+    chunks = services._chunk_text(text, max_tokens=10)
     assert len(chunks) > 1
     assert all(chunk.endswith(".") for chunk in chunks)
 

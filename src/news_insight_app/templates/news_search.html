@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Search News · Both Eyes Open</title>
+    <title>Search &amp; Compare · Both Eyes Open</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         :root {
@@ -11,19 +11,18 @@
             --accent: #78d5ff;
             --accent-strong: #ff5f6d;
             --muted: #c7c7d3;
+            --border: rgba(255, 255, 255, 0.1);
             font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
         }
+        * { box-sizing: border-box; }
         body {
             margin: 0;
             min-height: 100vh;
             background: linear-gradient(135deg, #05050a, #0f172a 45%, #1f1c59 100%);
             color: white;
+            padding-bottom: 100px;
         }
-        .page {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 40px 24px 60px;
-        }
+        .page { max-width: 1200px; margin: 0 auto; padding: 40px 24px 60px; }
         .hero {
             background: var(--panel);
             border-radius: 24px;
@@ -32,20 +31,11 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             margin-bottom: 30px;
         }
-        .hero h1 {
-            margin: 0;
-            font-size: clamp(2.4rem, 3vw, 3rem);
-            letter-spacing: -0.02em;
-        }
-        .hero p {
-            color: var(--muted);
-            margin-top: 10px;
-            max-width: 640px;
-        }
+        .hero h1 { margin: 8px 0 10px; font-size: clamp(2rem, 3vw, 2.8rem); letter-spacing: -0.02em; }
+        .hero p { color: var(--muted); margin: 0 0 20px; max-width: 640px; }
         .nav-link {
             display: inline-flex;
             align-items: center;
-            margin-top: 18px;
             padding: 9px 18px;
             border-radius: 20px;
             border: 1px solid rgba(255, 255, 255, 0.2);
@@ -53,29 +43,11 @@
             color: white;
             font-weight: 500;
             background: rgba(255, 255, 255, 0.02);
-            transition: background 0.3s ease;
+            transition: background 0.3s;
         }
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-        form.search-panel {
-            margin-top: 24px;
-            display: grid;
-            gap: 14px;
-        }
-        form.search-panel label {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--muted);
-        }
-        .control-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .control-row input,
-        .control-row select {
+        .nav-link:hover { background: rgba(255, 255, 255, 0.1); }
+        form.search-panel { display: flex; gap: 12px; flex-wrap: wrap; }
+        form.search-panel input {
             flex: 1;
             min-width: 200px;
             padding: 14px 16px;
@@ -85,199 +57,467 @@
             color: white;
             font-size: 1rem;
         }
-        .control-row button {
+        form.search-panel button {
             padding: 14px 22px;
             border-radius: 14px;
             border: none;
-            background: linear-gradient(135deg, #78d5ff, #ff5f6d);
-            color: #05050a;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .results {
-            margin-top: 30px;
-        }
-        .status-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 8px;
-            font-size: 0.95rem;
-            color: var(--muted);
-        }
-        .articles-container {
-            margin-top: 24px;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 24px;
-        }
-        .article {
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 20px;
-            padding: 22px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 360px;
-            gap: 16px;
-        }
-        .article h2 {
-            margin: 0;
-            font-size: 1.4rem;
-            color: white;
-        }
-        .article .source {
-            font-size: 0.9rem;
-            color: var(--muted);
-        }
-        .article .summary {
-            background: rgba(255, 255, 255, 0.04);
-            padding: 16px;
-            border-radius: 12px;
-            color: #f4f7ff;
-            line-height: 1.5;
-            border-left: 3px solid var(--accent);
-        }
-        .article .insights {
-            background: rgba(255, 255, 255, 0.02);
-            padding: 12px 16px;
-            border-radius: 12px;
-            border-left: 3px solid #8a2be2;
-            color: #dfe0ff;
-            font-size: 0.85rem;
-            line-height: 1.5;
-        }
-        .insights div {
-            display: flex;
-            justify-content: space-between;
-        }
-        .sentiment-section {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 500;
-        }
-        .sentiment-label {
-            padding: 5px 12px;
-            border-radius: 999px;
-            font-size: 0.85rem;
-            color: white;
-        }
-        .positive {
-            background: linear-gradient(135deg, #00b09b, #96c93d);
-        }
-        .negative {
-            background: linear-gradient(135deg, #ff416c, #ff4b2b);
-        }
-        .neutral {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-        }
-        .actions {
-            margin-top: auto;
-        }
-        .actions a {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            padding: 12px;
-            border-radius: 12px;
             background: linear-gradient(135deg, var(--accent), var(--accent-strong));
             color: #05050a;
-            font-weight: 600;
-            text-decoration: none;
-            text-align: center;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
         }
-        .footer {
-            margin-top: 60px;
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.9rem;
-        }
-        .error {
+        .status-bar { margin: 0 0 16px; font-size: 0.9rem; color: var(--muted); }
+        .error-box {
             color: #ff8b8b;
-            background: rgba(255, 139, 139, 0.1);
+            background: rgba(255, 139, 139, 0.08);
             padding: 12px 16px;
             border-radius: 12px;
-            border: 1px solid rgba(255, 139, 139, 0.4);
-            margin-bottom: 6px;
+            border: 1px solid rgba(255, 139, 139, 0.3);
+            margin-bottom: 20px;
         }
-        @media (max-width: 640px) {
-            .card {
-                padding: 18px;
-            }
-            .hero {
-                padding: 24px;
-            }
+        /* Two-column results */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 8px;
+        }
+        .results-col { display: flex; flex-direction: column; gap: 14px; }
+        .col-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .left-col .col-header {
+            background: rgba(120, 213, 255, 0.08);
+            border: 1px solid rgba(120, 213, 255, 0.22);
+            color: var(--accent);
+        }
+        .right-col .col-header {
+            background: rgba(255, 95, 109, 0.08);
+            border: 1px solid rgba(255, 95, 109, 0.22);
+            color: var(--accent-strong);
+        }
+        .col-empty {
+            padding: 28px 16px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.875rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 14px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+        /* Article cards */
+        .article-card {
+            background: rgba(255, 255, 255, 0.025);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .left-col .article-card.selected {
+            border-color: rgba(120, 213, 255, 0.7);
+            box-shadow: 0 0 0 2px rgba(120, 213, 255, 0.12);
+        }
+        .right-col .article-card.selected {
+            border-color: rgba(255, 95, 109, 0.7);
+            box-shadow: 0 0 0 2px rgba(255, 95, 109, 0.12);
+        }
+        .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .card-source { font-size: 0.78rem; color: var(--muted); }
+        .sentiment-label {
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .positive { background: linear-gradient(135deg, #00b09b, #96c93d); }
+        .negative { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+        .neutral { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .card-title { margin: 0; font-size: 0.95rem; line-height: 1.4; color: #f0f2ff; }
+        .card-summary {
+            font-size: 0.82rem;
+            color: var(--muted);
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 3;
+            overflow: hidden;
+        }
+        .card-actions { display: flex; gap: 8px; margin-top: 2px; }
+        .select-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.04);
+            color: white;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .select-btn:hover { background: rgba(255, 255, 255, 0.1); }
+        .left-col .article-card.selected .select-btn {
+            background: rgba(120, 213, 255, 0.12);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        .right-col .article-card.selected .select-btn {
+            background: rgba(255, 95, 109, 0.12);
+            border-color: var(--accent-strong);
+            color: var(--accent-strong);
+        }
+        .read-link {
+            padding: 9px 12px;
+            border-radius: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .read-link:hover { color: white; border-color: rgba(255, 255, 255, 0.3); }
+        /* Comparison tray */
+        .comparison-tray {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            z-index: 100;
+            background: rgba(8, 8, 18, 0.96);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .comparison-tray.visible { transform: translateY(0); }
+        .tray-slot {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 180px;
+            max-width: 360px;
+        }
+        .tray-badge {
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .tray-badge.left { background: rgba(120, 213, 255, 0.12); color: var(--accent); border: 1px solid rgba(120, 213, 255, 0.28); }
+        .tray-badge.right { background: rgba(255, 95, 109, 0.12); color: var(--accent-strong); border: 1px solid rgba(255, 95, 109, 0.28); }
+        .tray-title {
+            font-size: 0.82rem;
+            color: #d5d8ff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+        }
+        .tray-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 3px 5px; border-radius: 4px; }
+        .tray-clear:hover { color: white; }
+        .tray-divider { color: var(--muted); font-size: 1.1rem; }
+        .compare-btn {
+            padding: 11px 26px;
+            border-radius: 11px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #050505;
+            font-weight: 700;
+            font-size: 0.92rem;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.2s;
+            white-space: nowrap;
+        }
+        .compare-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .compare-btn:not(:disabled):hover { transform: translateY(-2px); }
+        .footer { margin-top: 50px; text-align: center; color: var(--muted); font-size: 0.85rem; }
+        @media (max-width: 700px) { .results-grid { grid-template-columns: 1fr; } }
+
+        /* Tone badge */
+        .tone-badge {
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            letter-spacing: 0.04em;
+            border: 1px solid;
+        }
+        .tone-calm       { color: #78d5ff; border-color: rgba(120,213,255,0.35); background: rgba(120,213,255,0.08); }
+        .tone-neutral    { color: #a0a0bb; border-color: rgba(160,160,187,0.3);  background: rgba(160,160,187,0.07); }
+        .tone-persuasive { color: #c084fc; border-color: rgba(192,132,252,0.35); background: rgba(192,132,252,0.08); }
+        .tone-emotional  { color: #fb923c; border-color: rgba(251,146,60,0.35);  background: rgba(251,146,60,0.08); }
+        .tone-urgent     { color: #f87171; border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.08); }
+        .tone-inflammatory { color: #ff5f6d; border-color: rgba(255,95,109,0.4); background: rgba(255,95,109,0.09); }
+        .tone-sarcastic  { color: #fbbf24; border-color: rgba(251,191,36,0.35);  background: rgba(251,191,36,0.08); }
+
+        /* Evidence chips */
+        .evidence-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 2px;
+        }
+        .evidence-chip {
+            font-size: 0.7rem;
+            color: #9ca3c7;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 6px;
+            padding: 2px 7px;
+            font-style: italic;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Loading overlay */
+        #loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(5, 5, 10, 0.82);
+            backdrop-filter: blur(8px);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 22px;
+        }
+        #loading-overlay.active { display: flex; }
+        .spinner {
+            width: 52px; height: 52px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.08);
+            border-top-color: var(--accent);
+            border-right-color: var(--accent-strong);
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-label {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: #d5d8ff;
+            letter-spacing: 0.02em;
+        }
+        .loading-sub {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-top: -10px;
         }
     </style>
 </head>
 <body>
     <div class="page">
         <div class="hero">
-            <a class="nav-link" href="/">← Back to digest</a>
-            <h1>Search today’s news with NewsAPI</h1>
-            <p>Enter a topic to surface the latest coverage across sources we categorize as left, right, or neutral. Each search runs through the same sentiment/story helpers used on the digest page.</p>
+            <a class="nav-link" href="/">← Deep dive</a>
+            <h1>Search &amp; Compare</h1>
+            <p>Search a topic to surface left and right coverage. Pick one article from each column, then compare.</p>
             <form class="search-panel" method="get" action="/news-search">
-                <label for="search-query">Search term</label>
-                <div class="control-row">
-                    <input id="search-query" name="q" type="text" placeholder="e.g. climate policy" value="{{ query }}" required>
-                    <select name="category">
-                        <option value="">Any category</option>
-                        {% for option in categories %}
-                            <option value="{{ option.value }}" {% if option.value == category %}selected{% endif %}>{{ option.label }}</option>
-                        {% endfor %}
-                    </select>
-                    <button type="submit">Search now</button>
-                </div>
+                <input name="q" type="text" placeholder="e.g. immigration policy" value="{{ query }}" required autocomplete="off">
+                <button type="submit">Search</button>
             </form>
         </div>
 
         {% if error %}
-            <div class="error">{{ error }}</div>
-        {% elif query and not articles %}
-            <div class="status-bar">No stories matched "{{ query }}". Try another term or remove the category filter.</div>
+            <div class="error-box">{{ error }}</div>
         {% endif %}
 
-        {% if query %}
-            <div class="status-bar">
-                <span>Showing {{ results_count }} result{{ '' if results_count == 1 else 's' }} for "{{ query }}"</span>
-                {% if category %}
-                    <span>Filtered by {{ category }}</span>
+        {% if query and not left_articles and not right_articles and not error %}
+            <div class="status-bar">No results found for "{{ query }}". Try a broader search term.</div>
+        {% elif left_articles or right_articles %}
+            <div class="status-bar">Select one article from each column, then click <strong>Compare →</strong></div>
+        {% endif %}
+
+        {% if left_articles or right_articles %}
+        <div class="results-grid">
+            <!-- Left column -->
+            <div class="results-col left-col" id="left-col">
+                <div class="col-header">⬤ Left-leaning sources</div>
+                {% if left_articles %}
+                    {% for article in left_articles %}
+                    <div class="article-card" data-article='{{ article|tojson }}' data-side="left">
+                        <div class="card-meta">
+                            <span class="card-source">{{ article.source }} · {{ (article.published_at or '')[:10] }}</span>
+                            <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                                <span class="sentiment-label {{ (article.sentiment.sentiment or 'neutral')|lower }}">{{ article.sentiment.sentiment or 'Neutral' }}</span>
+                                {% if article.sentiment.tone %}
+                                <span class="tone-badge tone-{{ article.sentiment.tone|lower }}">{{ article.sentiment.tone }}</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <h3 class="card-title">{{ article.title }}</h3>
+                        <p class="card-summary">{{ article.summary }}</p>
+                        {% if article.sentiment.evidence %}
+                        <div class="evidence-list">
+                            {% for phrase in article.sentiment.evidence[:3] %}
+                            <span class="evidence-chip" title="{{ phrase }}">{{ phrase }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="card-actions">
+                            <button class="select-btn" type="button">Select</button>
+                            <a class="read-link" href="{{ article.url }}" target="_blank" rel="noreferrer noopener">Read ↗</a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-empty">No left-leaning sources found for this query.</div>
                 {% endif %}
             </div>
-        {% endif %}
 
-        <div class="results">
-            <div class="articles-container">
-                {% for article in articles %}
-                <article class="article">
-                    <div>
-                        <div class="sentiment-section">
-                            <span class="sentiment-label {{ article.sentiment.sentiment|lower }}">{{ article.sentiment.sentiment }}</span>
-                            <span>{{ (article.sentiment.score * 100)|round(0) }}% confidence</span>
+            <!-- Right column -->
+            <div class="results-col right-col" id="right-col">
+                <div class="col-header">⬤ Right-leaning sources</div>
+                {% if right_articles %}
+                    {% for article in right_articles %}
+                    <div class="article-card" data-article='{{ article|tojson }}' data-side="right">
+                        <div class="card-meta">
+                            <span class="card-source">{{ article.source }} · {{ (article.published_at or '')[:10] }}</span>
+                            <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap;">
+                                <span class="sentiment-label {{ (article.sentiment.sentiment or 'neutral')|lower }}">{{ article.sentiment.sentiment or 'Neutral' }}</span>
+                                {% if article.sentiment.tone %}
+                                <span class="tone-badge tone-{{ article.sentiment.tone|lower }}">{{ article.sentiment.tone }}</span>
+                                {% endif %}
+                            </div>
                         </div>
-                        <h2>{{ article.title }}</h2>
-                        <div class="source">{{ article.source }} · {{ article.published_at }}</div>
-                        <div class="summary">{{ article.summary }}</div>
+                        <h3 class="card-title">{{ article.title }}</h3>
+                        <p class="card-summary">{{ article.summary }}</p>
+                        {% if article.sentiment.evidence %}
+                        <div class="evidence-list">
+                            {% for phrase in article.sentiment.evidence[:3] %}
+                            <span class="evidence-chip" title="{{ phrase }}">{{ phrase }}</span>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <div class="card-actions">
+                            <button class="select-btn" type="button">Select</button>
+                            <a class="read-link" href="{{ article.url }}" target="_blank" rel="noreferrer noopener">Read ↗</a>
+                        </div>
                     </div>
-                    <div class="insights">
-                        <div><span>Word count</span><span>{{ article.insights.word_count }}</span></div>
-                        <div><span>Sentences</span><span>{{ article.insights.sentence_count }}</span></div>
-                        <div><span>Reading time</span><span>{{ article.insights.reading_time_minutes }} min</span></div>
-                        <div><span>Keywords</span><span>{% if article.insights.keywords %}{{ article.insights.keywords|join(', ') }}{% else %}—{% endif %}</span></div>
-                    </div>
-                    <div class="actions">
-                        <a href="{{ article.url }}" target="_blank" rel="noreferrer noopener">Read the full story</a>
-                    </div>
-                </article>
-                {% endfor %}
+                    {% endfor %}
+                {% else %}
+                    <div class="col-empty">No right-leaning sources found for this query.</div>
+                {% endif %}
             </div>
         </div>
+        {% endif %}
 
-        <div class="footer">Powered by NewsAPI · Search rendered server-side with both-eyes-open helpers.</div>
+        <div class="footer">Powered by NewsAPI · Both Eyes Open</div>
     </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-label">Analyzing articles…</div>
+        <div class="loading-sub">Phi 3.5 is classifying sentiment &amp; tone</div>
+    </div>
+
+    <!-- Comparison tray -->
+    <div class="comparison-tray" id="comparison-tray">
+        <div class="tray-slot">
+            <span class="tray-badge left">Left</span>
+            <span class="tray-title" id="tray-left-title">—</span>
+            <button class="tray-clear" id="tray-clear-left" title="Remove">✕</button>
+        </div>
+        <span class="tray-divider">vs</span>
+        <div class="tray-slot">
+            <span class="tray-badge right">Right</span>
+            <span class="tray-title" id="tray-right-title">—</span>
+            <button class="tray-clear" id="tray-clear-right" title="Remove">✕</button>
+        </div>
+        <button class="compare-btn" id="compare-btn" disabled>Compare →</button>
+    </div>
+
+    <script>
+        // Show loading overlay when search is submitted
+        document.querySelector('form.search-panel').addEventListener('submit', function() {
+            document.getElementById('loading-overlay').classList.add('active');
+        });
+
+        let selections = { left: null, right: null };
+        const tray = document.getElementById('comparison-tray');
+        const trayLeftTitle = document.getElementById('tray-left-title');
+        const trayRightTitle = document.getElementById('tray-right-title');
+        const compareBtn = document.getElementById('compare-btn');
+
+        function updateTray() {
+            tray.classList.toggle('visible', !!(selections.left || selections.right));
+            trayLeftTitle.textContent = selections.left ? selections.left.title : '—';
+            trayRightTitle.textContent = selections.right ? selections.right.title : '—';
+            compareBtn.disabled = !(selections.left && selections.right);
+        }
+
+        function selectCard(card, side) {
+            const alreadySelected = card.classList.contains('selected');
+            document.querySelectorAll(`#${side}-col .article-card.selected`).forEach(c => {
+                c.classList.remove('selected');
+                c.querySelector('.select-btn').textContent = 'Select';
+            });
+            if (!alreadySelected) {
+                card.classList.add('selected');
+                card.querySelector('.select-btn').textContent = 'Selected ✓';
+                selections[side] = JSON.parse(card.dataset.article);
+            } else {
+                selections[side] = null;
+            }
+            updateTray();
+        }
+
+        document.querySelectorAll('.article-card').forEach(card => {
+            card.querySelector('.select-btn').addEventListener('click', () => {
+                selectCard(card, card.dataset.side);
+            });
+        });
+
+        document.getElementById('tray-clear-left').addEventListener('click', () => {
+            document.querySelectorAll('#left-col .article-card.selected').forEach(c => {
+                c.classList.remove('selected');
+                c.querySelector('.select-btn').textContent = 'Select';
+            });
+            selections.left = null;
+            updateTray();
+        });
+
+        document.getElementById('tray-clear-right').addEventListener('click', () => {
+            document.querySelectorAll('#right-col .article-card.selected').forEach(c => {
+                c.classList.remove('selected');
+                c.querySelector('.select-btn').textContent = 'Select';
+            });
+            selections.right = null;
+            updateTray();
+        });
+
+        compareBtn.addEventListener('click', () => {
+            if (!selections.left || !selections.right) return;
+            sessionStorage.setItem('compare_primary', JSON.stringify(selections.left));
+            sessionStorage.setItem('compare_reference', JSON.stringify(selections.right));
+            window.location.href = '/compare';
+        });
+    </script>
 </body>
 </html>

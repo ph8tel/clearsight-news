@@ -7,6 +7,7 @@ from .tokenizer_utils import get_tokenizer_provider
 
 QWEN_URL = os.getenv("QWEN_ANALYSIS_URL", "http://192.168.1.108:8000/v1/completions")
 MISTRAL_URL = os.getenv("MISTRAL_ANALYSIS_URL", "http://192.168.1.108:8001/v1/completions")
+PHI_URL = os.getenv("PHI_ANALYSIS_URL", "http://192.168.1.108:8002/v1/completions")
 
 QWEN_TOKENIZER = "qwen2-7b"
 MISTRAL_TOKENIZER = "mistralai/Mistral-7B-Instruct-v0.2"
