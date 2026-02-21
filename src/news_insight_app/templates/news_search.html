@@ -318,6 +318,55 @@
             white-space: nowrap;
         }
 
+        /* Compact search bar (results state) */
+        .search-bar-compact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--panel);
+            border-radius: 16px;
+            padding: 14px 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 30px rgba(10,10,20,0.5);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar-compact .brand {
+            font-weight: 800;
+            font-size: 1rem;
+            letter-spacing: -0.01em;
+            white-space: nowrap;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .search-bar-compact form {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            min-width: 200px;
+        }
+        .search-bar-compact input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 0.95rem;
+        }
+        .search-bar-compact button {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #05050a;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
         /* Loading overlay */
         #loading-overlay {
             display: none;
@@ -356,6 +405,17 @@
 </head>
 <body>
     <div class="page">
+        {% if left_articles or right_articles %}
+        <!-- Compact bar: results are visible -->
+        <div class="search-bar-compact">
+            <span class="brand">ClearSight News</span>
+            <form method="get" action="/">
+                <input name="q" type="text" placeholder="New search…" value="{{ query }}" required autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        {% else %}
+        <!-- Full hero: landing / empty state -->
         <div class="hero">
             <h1>ClearSight News</h1>
             <p class="tagline">See the same story through different political lenses — then let AI show you what each side is really saying.</p>
@@ -387,6 +447,7 @@
                 <button type="submit">Search</button>
             </form>
         </div>
+        {% endif %}
 
         {% if error %}
             <div class="error-box">{{ error }}</div>
@@ -394,11 +455,10 @@
 
         {% if query and not left_articles and not right_articles and not error %}
             <div class="status-bar">No results found for "{{ query }}". Try a broader search term.</div>
-        {% elif left_articles or right_articles %}
-            <div class="status-bar">Select one article from each column, then click <strong>Compare →</strong></div>
         {% endif %}
 
         {% if left_articles or right_articles %}
+            <div class="status-bar">Select one article from each column, then click <strong>Compare →</strong></div>
         <div class="results-grid">
             <!-- Left column -->
             <div class="results-col left-col" id="left-col">
