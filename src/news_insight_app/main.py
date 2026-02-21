@@ -148,10 +148,10 @@ def get_article_analysis(article_id):
             "title": reference_article['title'],
         }
     else:
-        from .groq_service import GROQ_LLAMA_MODEL
+        from .groq_service import GROQ_COMPARISON_MODEL
         comparison = {
             "comparison": "Comparison unavailable; only one article configured.",
-            "model": GROQ_LLAMA_MODEL,
+            "model": GROQ_COMPARISON_MODEL,
             "tokens_used": 0,
             "error": "No reference article available.",
             "reference": None,

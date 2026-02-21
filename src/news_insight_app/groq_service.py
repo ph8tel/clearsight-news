@@ -1,16 +1,16 @@
 """Groq-backed analysis and sentiment services.
 
-Replaces the local vLLM/completions endpoints with Groq's hosted models using
-the ``groq`` Python SDK (chat-completions API).
+Uses the ``groq`` Python SDK (chat-completions API) with three purpose-mapped
+models, each overridable via environment variable:
 
 Model mapping
 -------------
-* Rhetoric analysis  → GROQ_QWEN_MODEL   (default: ``qwen-qwq-32b``)
-* Comparison         → GROQ_LLAMA_MODEL  (default: ``llama-3.1-70b-versatile``)
-* Sentiment / tone   → GROQ_PHI_MODEL    (default: ``phi-3.5``)
+* Sentiment / tone   → GROQ_SENTIMENT_MODEL  (default: ``llama-3.1-8b-instant``)
+* Rhetoric analysis  → GROQ_RHETORIC_MODEL   (default: ``llama-3.1-8b-instant``)
+* Comparison         → GROQ_COMPARISON_MODEL (default: ``llama-3.3-70b-versatile``)
 
-All three model names are overridable via environment variables so the exact
-Groq model slug can be adjusted without code changes.
+All three model slugs are overridable via environment variables so the exact
+Groq model can be adjusted without code changes.
 """
 
 from __future__ import annotations
@@ -27,16 +27,11 @@ from groq import Groq
 # Model name configuration
 # ---------------------------------------------------------------------------
 
-# phi-3.5 is not hosted on Groq; llama-3.1-8b-instant is the fast/lightweight
-# equivalent used for sentiment classification.
-# qwen/qwen3-32b was expensive and returned noisy responses; switched to
-# llama-3.1-8b-instant for rhetoric analysis (production, ~$0.05/1M tokens).
-# To use a heavier model set GROQ_QWEN_MODEL=qwen/qwen3-32b in your .env.
-# llama-3.1-70b-versatile was deprecated 2025-01-24; llama-3.3-70b-versatile
-# is the current production 70 B model.
-GROQ_PHI_MODEL: str = os.getenv("GROQ_PHI_MODEL", "llama-3.1-8b-instant")
-GROQ_QWEN_MODEL: str = os.getenv("GROQ_QWEN_MODEL", "llama-3.1-8b-instant")
-GROQ_LLAMA_MODEL: str = os.getenv("GROQ_LLAMA_MODEL", "llama-3.3-70b-versatile")
+# Fast, cheap production model used for both sentiment and rhetoric.
+# Swap to a heavier model via env var, e.g. GROQ_RHETORIC_MODEL=llama-3.3-70b-versatile
+GROQ_SENTIMENT_MODEL: str = os.getenv("GROQ_SENTIMENT_MODEL", "llama-3.1-8b-instant")
+GROQ_RHETORIC_MODEL: str = os.getenv("GROQ_RHETORIC_MODEL", "llama-3.1-8b-instant")
+GROQ_COMPARISON_MODEL: str = os.getenv("GROQ_COMPARISON_MODEL", "llama-3.3-70b-versatile")
 
 
 # ---------------------------------------------------------------------------
@@ -116,13 +111,13 @@ def _strip_think(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 def analyze_rhetoric(article_text: str) -> Dict[str, Any]:
-    """Analyse *article_text* for tone and rhetorical devices via Groq (Qwen).
+    """Analyse *article_text* for tone and rhetorical devices via Groq.
 
     Returns a dict with keys: ``model``, ``tokens_used``, ``error``, ``text``,
     and ``analysis``.
     """
     result = _build_response(
-        GROQ_QWEN_MODEL,
+        GROQ_RHETORIC_MODEL,
         "Rhetorical analysis unavailable for this story.",
     )
     result["analysis"] = result["text"]
@@ -149,7 +144,7 @@ Analysis:"""
 
     try:
         analysis_text, tokens = _chat_completion(
-            GROQ_QWEN_MODEL, prompt, max_tokens=500
+            GROQ_RHETORIC_MODEL, prompt, max_tokens=500
         )
         analysis_text = _strip_think(analysis_text)
         result.update(
@@ -166,13 +161,13 @@ Analysis:"""
 
 
 def compare_article_texts(primary_text: str, reference_text: str) -> Dict[str, Any]:
-    """Compare two articles for framing, tone, and bias via Groq (Llama 3.1 70 B).
+    """Compare two articles for framing, tone, and bias via Groq.
 
     Returns a dict with keys: ``model``, ``tokens_used``, ``error``, ``text``,
     and ``comparison``.
     """
     result = _build_response(
-        GROQ_LLAMA_MODEL,
+        GROQ_COMPARISON_MODEL,
         "Comparison unavailable for this pair of stories.",
     )
     result["comparison"] = result["text"]
@@ -203,7 +198,7 @@ Comparison:"""
 
     try:
         comparison_text, tokens = _chat_completion(
-            GROQ_LLAMA_MODEL, prompt, max_tokens=600
+            GROQ_COMPARISON_MODEL, prompt, max_tokens=600
         )
         comparison_text = _strip_think(comparison_text)
         result.update(
@@ -224,13 +219,13 @@ Comparison:"""
 # ---------------------------------------------------------------------------
 
 class GroqSentimentService:
-    """Sentiment and tone classifier backed by Groq (phi-3.5 by default).
+    """Sentiment and tone classifier backed by Groq.
 
-    Exposes the same ``analyze(text)`` interface as :class:`SentimentService`
-    so it can be used as a drop-in replacement.
+    Defaults to ``llama-3.1-8b-instant`` via ``GROQ_SENTIMENT_MODEL``.
+    Exposes an ``analyze(text)`` method that returns a sentiment dict.
     """
 
-    def __init__(self, model_name: str = GROQ_PHI_MODEL) -> None:
+    def __init__(self, model_name: str = GROQ_SENTIMENT_MODEL) -> None:
         self.model_name = model_name
 
     def analyze(self, text: str) -> Dict[str, Any]:

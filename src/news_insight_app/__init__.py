@@ -1,5 +1,8 @@
 from flask import Flask
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # no-op when env vars are already set (e.g. Heroku config vars)
 
 def create_app():
     app = Flask(__name__)

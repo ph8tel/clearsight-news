@@ -12,9 +12,9 @@ from news_insight_app.groq_service import (
     GroqSentimentService,
     analyze_rhetoric,
     compare_article_texts,
-    GROQ_QWEN_MODEL,
-    GROQ_LLAMA_MODEL,
-    GROQ_PHI_MODEL,
+    GROQ_SENTIMENT_MODEL,
+    GROQ_RHETORIC_MODEL,
+    GROQ_COMPARISON_MODEL,
 )
 
 
@@ -83,7 +83,7 @@ def test_analyze_rhetoric_returns_expected_keys(monkeypatch):
     assert result["text"] == "Great rhetorical analysis"
     assert result["tokens_used"] == 55
     assert result["error"] is None
-    assert result["model"] == GROQ_QWEN_MODEL
+    assert result["model"] == GROQ_RHETORIC_MODEL
 
 
 def test_analyze_rhetoric_empty_text():
@@ -113,7 +113,7 @@ def test_compare_article_texts_returns_expected_keys(monkeypatch):
     assert result["text"] == "Detailed comparison"
     assert result["tokens_used"] == 99
     assert result["error"] is None
-    assert result["model"] == GROQ_LLAMA_MODEL
+    assert result["model"] == GROQ_COMPARISON_MODEL
 
 
 def test_compare_article_texts_missing_reference():
@@ -179,7 +179,7 @@ def test_groq_sentiment_positive(monkeypatch):
     assert result["polarity"] == pytest.approx(1.0)
     assert result["label"] == "POSITIVE"
     assert result["score"] == pytest.approx(1.0)
-    assert result["model"] == GROQ_PHI_MODEL
+    assert result["model"] == GROQ_SENTIMENT_MODEL
 
 
 def test_groq_sentiment_negative(monkeypatch):
