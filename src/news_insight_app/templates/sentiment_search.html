@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ClearSight News · Sentiment Search</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            --bg: #05050a;
+            --panel: rgba(12, 12, 22, 0.85);
+            --accent: #78d5ff;
+            --accent-strong: #ff5f6d;
+            --muted: #c7c7d3;
+            --border: rgba(255, 255, 255, 0.1);
+            font-family: 'Space Grotesk', 'Segoe UI', system-ui, sans-serif;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #05050a, #0f172a 45%, #1f1c59 100%);
+            color: white;
+            padding-bottom: 120px;
+        }
+        .page { max-width: 900px; margin: 0 auto; padding: 40px 24px 60px; }
+
+        /* ── Hero ─────────────────────────────────────────────── */
+        .hero {
+            background: var(--panel);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 25px 70px rgba(10, 10, 20, 0.65);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 30px;
+        }
+        .hero h1 { margin: 0 0 8px; font-size: clamp(2rem, 3vw, 2.8rem); letter-spacing: -0.02em; }
+        .hero p.tagline { color: var(--muted); margin: 0 0 22px; font-size: 1.05rem; line-height: 1.6; }
+        .hero-mode-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 0.82rem;
+            background: rgba(255, 255, 255, 0.03);
+            transition: background 0.2s;
+            margin-bottom: 20px;
+        }
+        .hero-mode-link:hover { background: rgba(255, 255, 255, 0.08); color: white; }
+        form.search-panel { display: flex; gap: 12px; flex-wrap: wrap; }
+        form.search-panel input {
+            flex: 1;
+            min-width: 200px;
+            padding: 14px 16px;
+            border-radius: 14px;
+            border: none;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 1rem;
+        }
+        form.search-panel button {
+            padding: 14px 22px;
+            border-radius: 14px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #05050a;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* ── Compact bar (results state) ──────────────────────── */
+        .search-bar-compact {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--panel);
+            border-radius: 16px;
+            padding: 14px 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 8px 30px rgba(10,10,20,0.5);
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .search-bar-compact .brand {
+            font-weight: 800;
+            font-size: 1rem;
+            white-space: nowrap;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .search-bar-compact form { display: flex; gap: 10px; flex: 1; min-width: 200px; }
+        .search-bar-compact input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: none;
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 0.95rem;
+        }
+        .search-bar-compact button {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #05050a;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .compact-mode-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.12);
+            text-decoration: none;
+            color: var(--muted);
+            font-size: 0.78rem;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        .compact-mode-link:hover { background: rgba(255,255,255,0.08); color: white; }
+
+        /* ── Status / error ───────────────────────────────────── */
+        .status-bar { margin: 0 0 16px; font-size: 0.9rem; color: var(--muted); }
+        .error-box {
+            color: #ff8b8b;
+            background: rgba(255,139,139,0.08);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,139,139,0.3);
+            margin-bottom: 20px;
+        }
+
+        /* ── Sentiment group headers ──────────────────────────── */
+        .sentiment-group { margin-bottom: 28px; }
+        .group-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 12px;
+        }
+        .group-positive {
+            background: rgba(0,176,155,0.08);
+            border: 1px solid rgba(0,176,155,0.25);
+            color: #4ecca3;
+        }
+        .group-neutral {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--muted);
+        }
+        .group-negative {
+            background: rgba(255,65,108,0.08);
+            border: 1px solid rgba(255,65,108,0.25);
+            color: #ff8b8b;
+        }
+
+        /* ── Article cards ────────────────────────────────────── */
+        .articles-list { display: flex; flex-direction: column; gap: 12px; }
+        .article-card {
+            background: rgba(255,255,255,0.025);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            cursor: default;
+        }
+        .article-card.selected-primary {
+            border-color: rgba(120,213,255,0.7);
+            box-shadow: 0 0 0 2px rgba(120,213,255,0.12);
+        }
+        .article-card.selected-reference {
+            border-color: rgba(255,95,109,0.7);
+            box-shadow: 0 0 0 2px rgba(255,95,109,0.12);
+        }
+        .card-meta { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
+        .card-source { font-size: 0.78rem; color: var(--muted); }
+        .card-score {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sentiment-label {
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .positive { background: linear-gradient(135deg, #00b09b, #96c93d); }
+        .negative { background: linear-gradient(135deg, #ff416c, #ff4b2b); }
+        .neutral  { background: linear-gradient(135deg, #6a6a8a, #8a8aaa); }
+        .polarity-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.72rem;
+            color: var(--muted);
+        }
+        .polarity-bar {
+            width: 80px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.08);
+            overflow: hidden;
+            position: relative;
+        }
+        .polarity-fill {
+            height: 100%;
+            border-radius: 3px;
+            position: absolute;
+        }
+        .polarity-fill.pos { background: linear-gradient(90deg,#00b09b,#96c93d); left: 50%; }
+        .polarity-fill.neg { background: linear-gradient(90deg,#ff4b2b,#ff416c); right: 50%; }
+        .polarity-fill.neu { background: rgba(255,255,255,0.2); left: 50%; width: 2px !important; }
+        .card-title { margin: 0; font-size: 0.95rem; line-height: 1.4; color: #f0f2ff; }
+        .card-summary { font-size: 0.82rem; color: var(--muted); line-height: 1.5;
+            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+        .card-actions { display: flex; gap: 8px; margin-top: 2px; }
+        .select-primary-btn, .select-reference-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border-radius: 9px;
+            border: 1px solid rgba(255,255,255,0.18);
+            background: rgba(255,255,255,0.04);
+            color: white;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .select-primary-btn:hover   { background: rgba(120,213,255,0.1); border-color: var(--accent); }
+        .select-reference-btn:hover { background: rgba(255,95,109,0.1); border-color: var(--accent-strong); }
+        .article-card.selected-primary   .select-primary-btn   { background: rgba(120,213,255,0.15); border-color: var(--accent); color: var(--accent); }
+        .article-card.selected-reference .select-reference-btn { background: rgba(255,95,109,0.15); border-color: var(--accent-strong); color: var(--accent-strong); }
+        .read-link {
+            padding: 9px 12px;
+            border-radius: 9px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: transparent;
+            color: var(--muted);
+            font-size: 0.82rem;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+        .read-link:hover { background: rgba(255,255,255,0.06); color: white; }
+
+        /* ── Loading overlay ──────────────────────────────────── */
+        #loading-overlay {
+            display: none;
+            position: fixed; inset: 0; z-index: 200;
+            background: rgba(5,5,10,0.82);
+            backdrop-filter: blur(8px);
+            flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+        }
+        #loading-overlay.active { display: flex; }
+        .spinner {
+            width: 52px; height: 52px; border-radius: 50%;
+            border: 3px solid rgba(255,255,255,0.08);
+            border-top-color: var(--accent); border-right-color: var(--accent-strong);
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-label { font-size: 1.05rem; font-weight: 600; color: #d5d8ff; }
+        .loading-sub { font-size: 0.82rem; color: var(--muted); margin-top: -10px; }
+
+        /* ── Comparison tray ──────────────────────────────────── */
+        .comparison-tray {
+            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+            background: rgba(12,12,22,0.97);
+            backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 16px 24px;
+            align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap;
+        }
+        .comparison-tray.visible { display: flex; }
+        .tray-slot {
+            display: flex; align-items: center; gap: 8px;
+            max-width: 280px; overflow: hidden;
+        }
+        .tray-badge {
+            padding: 3px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 700;
+            white-space: nowrap;
+        }
+        .tray-badge.primary   { background: rgba(120,213,255,0.15); color: var(--accent); border: 1px solid rgba(120,213,255,0.3); }
+        .tray-badge.reference { background: rgba(255,95,109,0.15); color: var(--accent-strong); border: 1px solid rgba(255,95,109,0.3); }
+        .tray-title { font-size: 0.85rem; color: #e8eaff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+        .tray-clear { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem; padding: 2px 4px; }
+        .tray-clear:hover { color: white; }
+        .tray-divider { color: var(--muted); font-size: 0.82rem; }
+        .compare-btn {
+            padding: 12px 24px; border-radius: 12px; border: none;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #05050a; font-weight: 800; font-size: 0.95rem; cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .compare-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ── Footer ───────────────────────────────────────────── */
+        .footer { margin-top: 40px; text-align: center; font-size: 0.78rem; color: rgba(255,255,255,0.25); }
+
+        @media (max-width: 600px) {
+            .search-bar-compact { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+
+        {% if articles %}
+        <!-- Compact bar when results are present -->
+        <div class="search-bar-compact">
+            <span class="brand">ClearSight News</span>
+            <form method="get" action="/sentiment-search">
+                <input name="q" type="text" placeholder="New search…" value="{{ query }}" required autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+            <a class="compact-mode-link" href="/?q={{ query }}">⇄ Left/Right view</a>
+        </div>
+        {% else %}
+        <!-- Full hero on landing / empty state -->
+        <div class="hero">
+            <a class="hero-mode-link" href="/">⇄ Switch to Left/Right view</a>
+            <h1>ClearSight News</h1>
+            <p class="tagline">Search any topic. We score every article with our sentiment formula, then you pick any two to compare — no political buckets.</p>
+            <form class="search-panel" method="get" action="/sentiment-search">
+                <input name="q" type="text" placeholder="e.g. climate change" value="{{ query }}" required autocomplete="off">
+                <button type="submit">Search</button>
+            </form>
+        </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="error-box">{{ error }}</div>
+        {% endif %}
+
+        {% if query and not articles and not error %}
+            <div class="status-bar">No results found for "{{ query }}". Try a broader term.</div>
+        {% endif %}
+
+        {% if articles %}
+            <div class="status-bar">
+                {{ articles|length }} article{{ 's' if articles|length != 1 }} · Pick one as <strong style="color:var(--accent)">Primary</strong> and one as <strong style="color:var(--accent-strong)">Reference</strong>, then compare.
+            </div>
+
+            {% set groups = [('Positive','positive'), ('Neutral','neutral'), ('Negative','negative')] %}
+            {% for label, css in groups %}
+                {% set group_articles = articles | selectattr('sentiment.sentiment', 'equalto', label) | list %}
+                {% if group_articles %}
+                <div class="sentiment-group">
+                    <div class="group-header group-{{ css }}">
+                        {% if css == 'positive' %}▲{% elif css == 'negative' %}▼{% else %}◼{% endif %}
+                        {{ label }} · {{ group_articles|length }} article{{ 's' if group_articles|length != 1 }}
+                    </div>
+                    <div class="articles-list">
+                        {% for article in group_articles %}
+                        {% set polarity = article.sentiment.polarity | float %}
+                        {% set abs_pol  = (polarity if polarity >= 0 else -polarity) %}
+                        <div class="article-card"
+                             data-article='{{ article|tojson }}'
+                             data-index="{{ loop.index0 }}">
+                            <div class="card-meta">
+                                <span class="card-source">{{ article.source }} · {{ (article.published_at or '')[:10] }}</span>
+                                <div class="card-score">
+                                    <span class="sentiment-label {{ css }}">{{ label }}</span>
+                                    <div class="polarity-bar-wrap">
+                                        <div class="polarity-bar">
+                                            {% if css == 'positive' %}
+                                            <div class="polarity-fill pos" style="width:{{ (abs_pol * 50)|round|int }}%"></div>
+                                            {% elif css == 'negative' %}
+                                            <div class="polarity-fill neg" style="width:{{ (abs_pol * 50)|round|int }}%"></div>
+                                            {% else %}
+                                            <div class="polarity-fill neu"></div>
+                                            {% endif %}
+                                        </div>
+                                        <span>{{ '%+.2f'|format(polarity) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <h3 class="card-title">{{ article.title }}</h3>
+                            <p class="card-summary">{{ article.summary }}</p>
+                            <div class="card-actions">
+                                <button class="select-primary-btn" type="button">Set as Primary</button>
+                                <button class="select-reference-btn" type="button">Set as Reference</button>
+                                <a class="read-link" href="{{ article.url }}" target="_blank" rel="noreferrer noopener">Read ↗</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+
+        <div class="footer">Powered by NewsAPI · Groq Llama · ClearSight News</div>
+    </div>
+
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-label">Scoring articles…</div>
+        <div class="loading-sub">Llama 3.1 8B is running sentiment analysis</div>
+    </div>
+
+    <!-- Comparison tray -->
+    <div class="comparison-tray" id="comparison-tray">
+        <div class="tray-slot">
+            <span class="tray-badge primary">Primary</span>
+            <span class="tray-title" id="tray-primary-title">—</span>
+            <button class="tray-clear" id="tray-clear-primary" title="Remove">✕</button>
+        </div>
+        <span class="tray-divider">vs</span>
+        <div class="tray-slot">
+            <span class="tray-badge reference">Reference</span>
+            <span class="tray-title" id="tray-reference-title">—</span>
+            <button class="tray-clear" id="tray-clear-reference" title="Remove">✕</button>
+        </div>
+        <button class="compare-btn" id="compare-btn" disabled>Compare →</button>
+    </div>
+
+    <script>
+        // Loading overlay on any search submit
+        document.querySelectorAll('form.search-panel, .search-bar-compact form').forEach(function(f) {
+            f.addEventListener('submit', function() {
+                document.getElementById('loading-overlay').classList.add('active');
+            });
+        });
+
+        let selections = { primary: null, reference: null };
+        const tray             = document.getElementById('comparison-tray');
+        const trayPrimaryTitle = document.getElementById('tray-primary-title');
+        const trayRefTitle     = document.getElementById('tray-reference-title');
+        const compareBtn       = document.getElementById('compare-btn');
+
+        function updateTray() {
+            tray.classList.toggle('visible', !!(selections.primary || selections.reference));
+            trayPrimaryTitle.textContent = selections.primary   ? selections.primary.title   : '—';
+            trayRefTitle.textContent     = selections.reference ? selections.reference.title : '—';
+            compareBtn.disabled = !(selections.primary && selections.reference);
+        }
+
+        function clearRole(role) {
+            document.querySelectorAll(`.article-card.selected-${role}`).forEach(c => {
+                c.classList.remove(`selected-${role}`);
+                c.querySelector(role === 'primary' ? '.select-primary-btn' : '.select-reference-btn')
+                 .textContent = role === 'primary' ? 'Set as Primary' : 'Set as Reference';
+            });
+            selections[role] = null;
+            updateTray();
+        }
+
+        document.querySelectorAll('.article-card').forEach(card => {
+            const data = JSON.parse(card.dataset.article);
+
+            card.querySelector('.select-primary-btn').addEventListener('click', () => {
+                const alreadySelected = card.classList.contains('selected-primary');
+                clearRole('primary');
+                if (!alreadySelected) {
+                    card.classList.add('selected-primary');
+                    card.querySelector('.select-primary-btn').textContent = 'Primary ✓';
+                    selections.primary = data;
+                    updateTray();
+                }
+            });
+
+            card.querySelector('.select-reference-btn').addEventListener('click', () => {
+                const alreadySelected = card.classList.contains('selected-reference');
+                clearRole('reference');
+                if (!alreadySelected) {
+                    card.classList.add('selected-reference');
+                    card.querySelector('.select-reference-btn').textContent = 'Reference ✓';
+                    selections.reference = data;
+                    updateTray();
+                }
+            });
+        });
+
+        document.getElementById('tray-clear-primary').addEventListener('click', () => clearRole('primary'));
+        document.getElementById('tray-clear-reference').addEventListener('click', () => clearRole('reference'));
+
+        compareBtn.addEventListener('click', () => {
+            if (!selections.primary || !selections.reference) return;
+            sessionStorage.setItem('compare_primary',   JSON.stringify(selections.primary));
+            sessionStorage.setItem('compare_reference', JSON.stringify(selections.reference));
+            window.location.href = '/compare';
+        });
+    </script>
+</body>
+</html>
