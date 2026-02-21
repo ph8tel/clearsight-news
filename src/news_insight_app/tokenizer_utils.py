@@ -3,11 +3,6 @@ from __future__ import annotations
 import threading
 from typing import Any, Dict
 
-try:
-	from transformers import AutoTokenizer
-except ImportError:
-	AutoTokenizer = None
-
 
 def create_fallback_tokenizer():
 	class _FallbackTokenizer:
@@ -37,20 +32,10 @@ class TokenizerProvider:
 	def get_tokenizer(self, model_name: str) -> Any:
 		"""
 		Get or load a tokenizer for the given model.
-		Caches tokenizers by model name; falls back to simple tokenizer if offline.
+		Caches tokenizers by model name.
 		"""
 		if model_name not in self._tokenizers:
-			if AutoTokenizer is None:
-				self._tokenizers[model_name] = create_fallback_tokenizer()
-			else:
-				try:
-					self._tokenizers[model_name] = AutoTokenizer.from_pretrained(
-						model_name,
-						use_fast=True,
-						local_files_only=True,
-					)
-				except (OSError, ValueError) as e:
-					self._tokenizers[model_name] = create_fallback_tokenizer()
+			self._tokenizers[model_name] = create_fallback_tokenizer()
 		return self._tokenizers[model_name]
 
 	def count_tokens(self, text: str, model_name: str) -> int:
