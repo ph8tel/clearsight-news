@@ -1,1 +1,1 @@
-web: gunicorn "news_insight_app:create_app()" --workers=2 --threads=4 --timeout=120 --bind=0.0.0.0:$PORT
+web: PYTHONPATH=src gunicorn "news_insight_app:create_app()" --workers=2 --threads=4 --timeout=120 --bind=0.0.0.0:$PORT
